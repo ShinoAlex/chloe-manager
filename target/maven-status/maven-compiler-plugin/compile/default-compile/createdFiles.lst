@@ -1,0 +1,4 @@
+com\chloe\chloemanager\controller\HelloController.class
+com\chloe\chloemanager\ChloeManagerPlugin.class
+com\chloe\chloemanager\view\PlayerView.class
+com\chloe\chloemanager\model\PlayerDataModel.class
