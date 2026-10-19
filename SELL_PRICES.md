@@ -1,6 +1,6 @@
-# 💰 Sell Prices — ChloeManager v1.1.0
+# 💰 Sell Prices — ChloeManager v1.3.0
 
-Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory).
+Use `/sell` to open the sell GUI, or `/sell all` to auto-sell everything in your inventory.
 
 > Tools, armour, food (except fish), and crafted goods **cannot** be sold.
 
@@ -8,8 +8,8 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 
 ## 🪵 Logs
 
-| Item | Price |
-|------|-------|
+| Item | Sell Price |
+|------|-----------|
 | Oak Log | $2.00 |
 | Spruce Log | $2.00 |
 | Birch Log | $2.00 |
@@ -25,8 +25,8 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 
 ## 🪨 Stone & Minerals
 
-| Item | Price |
-|------|-------|
+| Item | Sell Price |
+|------|-----------|
 | Cobblestone | $0.50 |
 | Stone | $0.50 |
 | Granite | $0.80 |
@@ -43,8 +43,8 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 
 ## ⛏️ Ores & Ingots
 
-| Item | Price |
-|------|-------|
+| Item | Sell Price |
+|------|-----------|
 | Coal | $5.00 |
 | Coal Ore | $4.00 |
 | Deepslate Coal Ore | $5.00 |
@@ -85,8 +85,8 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 
 ## 🌾 Crops & Farm Produce
 
-| Item | Price |
-|------|-------|
+| Item | Sell Price |
+|------|-----------|
 | Wheat | $2.00 |
 | Wheat Seeds | $1.00 |
 | Carrot | $2.00 |
@@ -108,8 +108,8 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 
 ## 🐄 Animal Drops
 
-| Item | Price |
-|------|-------|
+| Item | Sell Price |
+|------|-----------|
 | Leather | $5.00 |
 | Feather | $1.50 |
 | Bone | $2.00 |
@@ -138,8 +138,8 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 
 ## 🐟 Fish
 
-| Item | Price |
-|------|-------|
+| Item | Sell Price |
+|------|-----------|
 | Cod | $5.00 |
 | Salmon | $8.00 |
 | Tropical Fish | $12.00 |
@@ -149,8 +149,8 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 
 ## 🔥 Nether & End Resources
 
-| Item | Price |
-|------|-------|
+| Item | Sell Price |
+|------|-----------|
 | Nether Brick | $3.00 |
 | Nether Wart | $5.00 |
 | Soul Sand | $2.00 |
@@ -160,8 +160,58 @@ Sell items using `/sell` (GUI) or `/sell all` (auto-sell everything in inventory
 | Blackstone | $1.50 |
 | Crying Obsidian | $15.00 |
 | Obsidian | $10.00 |
+| Chorus Fruit | $5.00 |
+| Chorus Flower | $8.00 |
+| Purpur Block | $5.00 |
 | End Stone | $3.00 |
 | Shulker Shell | $100.00 |
 
+---
 
-*v1.1.0 — prices subject to change*
+## 🎨 Dyes
+
+| Item | Sell Price |
+|------|-----------|
+| White Dye | $2.00 |
+| Orange Dye | $2.00 |
+| Magenta Dye | $2.00 |
+| Light Blue Dye | $2.00 |
+| Yellow Dye | $2.00 |
+| Lime Dye | $2.00 |
+| Pink Dye | $2.00 |
+| Gray Dye | $2.00 |
+| Light Gray Dye | $2.00 |
+| Cyan Dye | $2.00 |
+| Purple Dye | $2.00 |
+| Blue Dye | $2.00 |
+| Brown Dye | $2.00 |
+| Green Dye | $2.00 |
+| Red Dye | $2.00 |
+| Black Dye | $2.00 |
+
+---
+
+## 🐑 Wool
+
+| Item | Sell Price |
+|------|-----------|
+| White Wool | $3.00 |
+| Orange Wool | $3.00 |
+| Magenta Wool | $3.00 |
+| Light Blue Wool | $3.00 |
+| Yellow Wool | $3.00 |
+| Lime Wool | $3.00 |
+| Pink Wool | $3.00 |
+| Gray Wool | $3.00 |
+| Light Gray Wool | $3.00 |
+| Cyan Wool | $3.00 |
+| Purple Wool | $3.00 |
+| Blue Wool | $3.00 |
+| Brown Wool | $3.00 |
+| Green Wool | $3.00 |
+| Red Wool | $3.00 |
+| Black Wool | $3.00 |
+
+---
+
+*v1.3.0 — prices subject to change.*

@@ -1,16 +1,23 @@
 package com.chloe.chloemanager;
 
+import com.chloe.chloemanager.controller.AhController;
 import com.chloe.chloemanager.controller.EconomyController;
 import com.chloe.chloemanager.controller.HelloController;
 import com.chloe.chloemanager.controller.ShopController;
+import com.chloe.chloemanager.controller.TaixiuController;
+import com.chloe.chloemanager.model.AhModel;
 import com.chloe.chloemanager.model.EconomyModel;
 import com.chloe.chloemanager.model.PlayerDataModel;
 import com.chloe.chloemanager.model.SellPriceRegistry;
 import com.chloe.chloemanager.model.ShopRegistry;
+import com.chloe.chloemanager.model.TaixiuLog;
+import com.chloe.chloemanager.model.TaixiuModel;
+import com.chloe.chloemanager.view.AhGUI;
 import com.chloe.chloemanager.view.EconomyView;
 import com.chloe.chloemanager.view.PlayerView;
 import com.chloe.chloemanager.view.SellGUI;
 import com.chloe.chloemanager.view.ShopGUI;
+import com.chloe.chloemanager.view.TaixiuView;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -40,9 +47,20 @@ public final class ChloeManagerPlugin extends JavaPlugin {
     private EconomyController economyController;
 
     // Shop feature
-    private ShopRegistry  shopRegistry;
-    private ShopGUI       shopGUI;
+    private ShopRegistry   shopRegistry;
+    private ShopGUI        shopGUI;
     private ShopController shopController;
+
+    // Tài Xỉu feature
+    private TaixiuModel      taixiuModel;
+    private TaixiuLog        taixiuLog;
+    private TaixiuView       taixiuView;
+    private TaixiuController taixiuController;
+
+    // Black Market (/ah)
+    private AhModel      ahModel;
+    private AhGUI        ahGUI;
+    private AhController ahController;
 
     @Override
     public void onEnable() {
@@ -89,15 +107,37 @@ public final class ChloeManagerPlugin extends JavaPlugin {
         getCommand("shop").setExecutor(shopController);
         getServer().getPluginManager().registerEvents(shopController, this);
 
+        // ── Tài Xỉu feature ──────────────────────────────────────────────
+        taixiuModel      = new TaixiuModel();
+        taixiuLog        = new TaixiuLog(this);
+        taixiuView       = new TaixiuView();
+        taixiuController = new TaixiuController(this, economyModel, taixiuModel, taixiuView, taixiuLog);
+
+        getCommand("taixiu").setExecutor(taixiuController);
+        getCommand("taixiu").setTabCompleter(taixiuController);
+        getServer().getPluginManager().registerEvents(taixiuController, this);
+
+        taixiuController.startLoop();
+
+        // ── Black Market (/ah) ────────────────────────────────────────────
+        ahModel      = new AhModel(this);
+        ahGUI        = new AhGUI();
+        ahController = new AhController(this, ahModel, economyModel, ahGUI);
+
+        getCommand("ah").setExecutor(ahController);
+        getCommand("ah").setTabCompleter(ahController);
+        getServer().getPluginManager().registerEvents(ahController, this);
+        ahController.startExpiryTask();
+
         getLogger().info("ChloeManager enabled!");
     }
 
     @Override
     public void onDisable() {
-        // Save all balances to disk on clean shutdown
-        if (economyModel != null) {
-            economyModel.save();
-        }
+        if (taixiuController != null) taixiuController.stopLoop();
+        if (ahController     != null) ahController.stopExpiryTask();
+        if (ahModel          != null) ahModel.save();
+        if (economyModel     != null) economyModel.save();
         getLogger().info("ChloeManager disabled.");
         instance = null;
     }

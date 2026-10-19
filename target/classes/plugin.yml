@@ -1,5 +1,5 @@
 name: ChloeManager
-version: 1.1.1
+version: 1.3.0
 main: com.chloe.chloemanager.ChloeManagerPlugin
 api-version: 1.20
 description: A Minecraft plugin built with MVC architecture
@@ -42,6 +42,16 @@ commands:
     usage: /shop
     permission: chloemanager.economy.shop
 
+  taixiu:
+    description: Tài Xỉu dice gambling game
+    usage: /taixiu [bet|toggle]
+    permission: chloemanager.taixiu
+
+  ah:
+    description: Open the Black Market or list items for sale
+    usage: /ah [sell <price> [amount]]
+    permission: chloemanager.ah
+
 permissions:
   chloemanager.hello:
     description: Allows use of the /hello command
@@ -65,6 +75,14 @@ permissions:
 
   chloemanager.economy.shop:
     description: Allows use of /shop
+    default: true
+
+  chloemanager.taixiu:
+    description: Allows use of /taixiu
+    default: true
+
+  chloemanager.ah:
+    description: Allows use of /ah black market
     default: true
 
   chloemanager.admin:
