@@ -1,8 +1,13 @@
 package com.chloe.chloemanager;
 
+import com.chloe.chloemanager.controller.EconomyController;
 import com.chloe.chloemanager.controller.HelloController;
+import com.chloe.chloemanager.model.EconomyModel;
 import com.chloe.chloemanager.model.PlayerDataModel;
+import com.chloe.chloemanager.model.SellPriceRegistry;
+import com.chloe.chloemanager.view.EconomyView;
 import com.chloe.chloemanager.view.PlayerView;
+import com.chloe.chloemanager.view.SellGUI;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -17,33 +22,66 @@ public final class ChloeManagerPlugin extends JavaPlugin {
 
     private static ChloeManagerPlugin instance;
 
-    // --- MVC layers ---
+    // ── MVC layers ────────────────────────────────────────────────────────
+
+    // Hello feature
     private PlayerDataModel playerDataModel;
-    private PlayerView playerView;
+    private PlayerView      playerView;
     private HelloController helloController;
+
+    // Economy feature
+    private EconomyModel      economyModel;
+    private SellPriceRegistry sellPriceRegistry;
+    private EconomyView       economyView;
+    private SellGUI           sellGUI;
+    private EconomyController economyController;
 
     @Override
     public void onEnable() {
         instance = this;
 
-        // 1. Initialise the Model
+        // ── Hello feature ────────────────────────────────────────────────
         playerDataModel = new PlayerDataModel();
-
-        // 2. Initialise the View
-        playerView = new PlayerView();
-
-        // 3. Initialise Controllers and wire in their Model + View
+        playerView      = new PlayerView();
         helloController = new HelloController(playerDataModel, playerView);
 
-        // 4. Register commands
         getCommand("hello").setExecutor(helloController);
         getCommand("hello").setTabCompleter(helloController);
+
+        // ── Economy feature ──────────────────────────────────────────────
+        economyModel      = new EconomyModel(this);
+        sellPriceRegistry = new SellPriceRegistry();
+        economyView       = new EconomyView();
+        sellGUI           = new SellGUI(sellPriceRegistry);
+        economyController = new EconomyController(
+                economyModel, sellPriceRegistry, economyView, sellGUI);
+
+        getCommand("sell").setExecutor(economyController);
+        getCommand("sell").setTabCompleter(economyController);
+
+        getCommand("balance").setExecutor(economyController);
+        getCommand("balance").setTabCompleter(economyController);
+
+        getCommand("bal").setExecutor(economyController);
+        getCommand("bal").setTabCompleter(economyController);
+
+        getCommand("baltop").setExecutor(economyController);
+
+        getCommand("pay").setExecutor(economyController);
+        getCommand("pay").setTabCompleter(economyController);
+
+        // Register GUI event listener
+        getServer().getPluginManager().registerEvents(economyController, this);
 
         getLogger().info("ChloeManager enabled!");
     }
 
     @Override
     public void onDisable() {
+        // Save all balances to disk on clean shutdown
+        if (economyModel != null) {
+            economyModel.save();
+        }
         getLogger().info("ChloeManager disabled.");
         instance = null;
     }
