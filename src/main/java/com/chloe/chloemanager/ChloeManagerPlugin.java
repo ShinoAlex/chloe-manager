@@ -2,12 +2,15 @@ package com.chloe.chloemanager;
 
 import com.chloe.chloemanager.controller.EconomyController;
 import com.chloe.chloemanager.controller.HelloController;
+import com.chloe.chloemanager.controller.ShopController;
 import com.chloe.chloemanager.model.EconomyModel;
 import com.chloe.chloemanager.model.PlayerDataModel;
 import com.chloe.chloemanager.model.SellPriceRegistry;
+import com.chloe.chloemanager.model.ShopRegistry;
 import com.chloe.chloemanager.view.EconomyView;
 import com.chloe.chloemanager.view.PlayerView;
 import com.chloe.chloemanager.view.SellGUI;
+import com.chloe.chloemanager.view.ShopGUI;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -35,6 +38,11 @@ public final class ChloeManagerPlugin extends JavaPlugin {
     private EconomyView       economyView;
     private SellGUI           sellGUI;
     private EconomyController economyController;
+
+    // Shop feature
+    private ShopRegistry  shopRegistry;
+    private ShopGUI       shopGUI;
+    private ShopController shopController;
 
     @Override
     public void onEnable() {
@@ -72,6 +80,14 @@ public final class ChloeManagerPlugin extends JavaPlugin {
 
         // Register GUI event listener
         getServer().getPluginManager().registerEvents(economyController, this);
+
+        // ── Shop feature ─────────────────────────────────────────────────
+        shopRegistry   = new ShopRegistry();
+        shopGUI        = new ShopGUI(shopRegistry);
+        shopController = new ShopController(economyModel, shopRegistry, economyView, shopGUI);
+
+        getCommand("shop").setExecutor(shopController);
+        getServer().getPluginManager().registerEvents(shopController, this);
 
         getLogger().info("ChloeManager enabled!");
     }

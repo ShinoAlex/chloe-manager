@@ -1,5 +1,5 @@
 name: ChloeManager
-version: 1.0.0
+version: 1.1.1
 main: com.chloe.chloemanager.ChloeManagerPlugin
 api-version: 1.20
 description: A Minecraft plugin built with MVC architecture
@@ -11,10 +11,62 @@ commands:
     usage: /hello [player]
     permission: chloemanager.hello
 
+  sell:
+    description: Open the sell GUI or sell all sellable items
+    usage: /sell [all]
+    permission: chloemanager.economy.sell
+
+  balance:
+    description: Check your balance or another player's balance
+    usage: /balance [player]
+    permission: chloemanager.economy.balance
+    aliases: [bal]
+
+  bal:
+    description: Shortcut to check your own balance
+    usage: /bal
+    permission: chloemanager.economy.balance
+
+  baltop:
+    description: View the top 10 richest players
+    usage: /baltop
+    permission: chloemanager.economy.baltop
+
+  pay:
+    description: Pay another online player money
+    usage: /pay <player> <amount>
+    permission: chloemanager.economy.pay
+
+  shop:
+    description: Open the shop to buy items
+    usage: /shop
+    permission: chloemanager.economy.shop
+
 permissions:
   chloemanager.hello:
     description: Allows use of the /hello command
     default: op
+
+  chloemanager.economy.sell:
+    description: Allows use of /sell and /sell all
+    default: true
+
+  chloemanager.economy.balance:
+    description: Allows use of /balance and /bal
+    default: true
+
+  chloemanager.economy.baltop:
+    description: Allows use of /baltop
+    default: true
+
+  chloemanager.economy.pay:
+    description: Allows use of /pay
+    default: true
+
+  chloemanager.economy.shop:
+    description: Allows use of /shop
+    default: true
+
   chloemanager.admin:
     description: Full admin access to ChloeManager
     default: op

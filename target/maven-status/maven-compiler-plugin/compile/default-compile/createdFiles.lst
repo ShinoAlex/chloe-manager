@@ -1,4 +1,14 @@
-com\chloe\chloemanager\controller\HelloController.class
-com\chloe\chloemanager\ChloeManagerPlugin.class
-com\chloe\chloemanager\view\PlayerView.class
+com\chloe\chloemanager\view\EconomyView.class
+com\chloe\chloemanager\model\ShopRegistry$ShopEntry.class
+com\chloe\chloemanager\view\ShopGUI.class
+com\chloe\chloemanager\controller\EconomyController.class
 com\chloe\chloemanager\model\PlayerDataModel.class
+com\chloe\chloemanager\model\EconomyModel.class
+com\chloe\chloemanager\ChloeManagerPlugin.class
+com\chloe\chloemanager\model\ShopRegistry.class
+com\chloe\chloemanager\controller\ShopController.class
+com\chloe\chloemanager\model\ShopRegistry$ShopCategory.class
+com\chloe\chloemanager\model\SellPriceRegistry.class
+com\chloe\chloemanager\view\SellGUI.class
+com\chloe\chloemanager\controller\HelloController.class
+com\chloe\chloemanager\view\PlayerView.class

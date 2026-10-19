@@ -1,5 +1,5 @@
 name: ChloeManager
-version: 1.0.0
+version: 1.1.1
 main: com.chloe.chloemanager.ChloeManagerPlugin
 api-version: 1.20
 description: A Minecraft plugin built with MVC architecture
@@ -37,6 +37,11 @@ commands:
     usage: /pay <player> <amount>
     permission: chloemanager.economy.pay
 
+  shop:
+    description: Open the shop to buy items
+    usage: /shop
+    permission: chloemanager.economy.shop
+
 permissions:
   chloemanager.hello:
     description: Allows use of the /hello command
@@ -56,6 +61,10 @@ permissions:
 
   chloemanager.economy.pay:
     description: Allows use of /pay
+    default: true
+
+  chloemanager.economy.shop:
+    description: Allows use of /shop
     default: true
 
   chloemanager.admin:
