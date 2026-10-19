@@ -6,7 +6,9 @@ com\chloe\chloemanager\view\AhGUI.class
 com\chloe\chloemanager\controller\AhController$1.class
 com\chloe\chloemanager\controller\EconomyController.class
 com\chloe\chloemanager\model\PlayerDataModel.class
+com\chloe\chloemanager\controller\KillRewardController.class
 com\chloe\chloemanager\model\TaixiuModel.class
+com\chloe\chloemanager\model\BankModel$BankAccount.class
 com\chloe\chloemanager\model\EconomyModel.class
 com\chloe\chloemanager\ChloeManagerPlugin.class
 com\chloe\chloemanager\controller\TaixiuController$1.class
@@ -15,8 +17,12 @@ com\chloe\chloemanager\controller\ShopController.class
 com\chloe\chloemanager\model\TaixiuModel$DiceResult.class
 com\chloe\chloemanager\model\TaixiuModel$BetSide.class
 com\chloe\chloemanager\view\PlayerView.class
+com\chloe\chloemanager\controller\BankController.class
 com\chloe\chloemanager\model\AhListing$Status.class
+com\chloe\chloemanager\model\BankModel.class
+com\chloe\chloemanager\view\BankGUI.class
 com\chloe\chloemanager\controller\TaixiuController$2.class
+com\chloe\chloemanager\controller\BankController$1.class
 com\chloe\chloemanager\controller\AhController.class
 com\chloe\chloemanager\model\AhModel.class
 com\chloe\chloemanager\model\ShopRegistry$ShopCategory.class

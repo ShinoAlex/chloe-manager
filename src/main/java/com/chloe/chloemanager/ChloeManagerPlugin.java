@@ -1,11 +1,14 @@
 package com.chloe.chloemanager;
 
 import com.chloe.chloemanager.controller.AhController;
+import com.chloe.chloemanager.controller.BankController;
 import com.chloe.chloemanager.controller.EconomyController;
 import com.chloe.chloemanager.controller.HelloController;
+import com.chloe.chloemanager.controller.KillRewardController;
 import com.chloe.chloemanager.controller.ShopController;
 import com.chloe.chloemanager.controller.TaixiuController;
 import com.chloe.chloemanager.model.AhModel;
+import com.chloe.chloemanager.model.BankModel;
 import com.chloe.chloemanager.model.EconomyModel;
 import com.chloe.chloemanager.model.PlayerDataModel;
 import com.chloe.chloemanager.model.SellPriceRegistry;
@@ -13,6 +16,7 @@ import com.chloe.chloemanager.model.ShopRegistry;
 import com.chloe.chloemanager.model.TaixiuLog;
 import com.chloe.chloemanager.model.TaixiuModel;
 import com.chloe.chloemanager.view.AhGUI;
+import com.chloe.chloemanager.view.BankGUI;
 import com.chloe.chloemanager.view.EconomyView;
 import com.chloe.chloemanager.view.PlayerView;
 import com.chloe.chloemanager.view.SellGUI;
@@ -61,6 +65,14 @@ public final class ChloeManagerPlugin extends JavaPlugin {
     private AhModel      ahModel;
     private AhGUI        ahGUI;
     private AhController ahController;
+
+    // Kill bounty
+    private KillRewardController killRewardController;
+
+    // Bank feature
+    private BankModel      bankModel;
+    private BankGUI        bankGUI;
+    private BankController bankController;
 
     @Override
     public void onEnable() {
@@ -129,6 +141,27 @@ public final class ChloeManagerPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(ahController, this);
         ahController.startExpiryTask();
 
+        // ── Kill bounty ────────────────────────────────────────────────────
+        killRewardController = new KillRewardController(economyModel);
+        getServer().getPluginManager().registerEvents(killRewardController, this);
+
+        // ── Bank feature ──────────────────────────────────────────────────
+        bankModel      = new BankModel(this);
+        bankGUI        = new BankGUI(bankModel);
+        bankController = new BankController(this, bankModel, economyModel, bankGUI);
+
+        getCommand("bank").setExecutor(bankController);
+        getCommand("bank").setTabCompleter(bankController);
+
+        getCommand("deposit").setExecutor(bankController);
+        getCommand("deposit").setTabCompleter(bankController);
+
+        getCommand("withdraw").setExecutor(bankController);
+        getCommand("withdraw").setTabCompleter(bankController);
+
+        getServer().getPluginManager().registerEvents(bankController, this);
+        bankController.startInterestTask();
+
         getLogger().info("ChloeManager enabled!");
     }
 
@@ -136,6 +169,7 @@ public final class ChloeManagerPlugin extends JavaPlugin {
     public void onDisable() {
         if (taixiuController != null) taixiuController.stopLoop();
         if (ahController     != null) ahController.stopExpiryTask();
+        if (bankController   != null) bankController.stopInterestTask();
         if (ahModel          != null) ahModel.save();
         if (economyModel     != null) economyModel.save();
         getLogger().info("ChloeManager disabled.");
