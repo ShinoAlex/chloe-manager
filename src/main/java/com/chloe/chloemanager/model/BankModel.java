@@ -30,9 +30,9 @@ public class BankModel {
 
     /** 1 Minecraft day = 24000 ticks.  Interest cycle = 30 days. */
     public static final long TICKS_PER_DAY      = 24000L;
-    public static final long INTEREST_CYCLE_DAYS = 30L;
+    public static final long INTEREST_CYCLE_DAYS = 50L;
     public static final long INTEREST_CYCLE_TICKS = INTEREST_CYCLE_DAYS * TICKS_PER_DAY;
-    public static final double INTEREST_RATE = 0.02;  // 2%
+    public static final double INTEREST_RATE = 0.015;  // 1.5%
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -186,7 +186,7 @@ public class BankModel {
         long day = getWorldFullTime() / TICKS_PER_DAY;
         String line = "[" + timestamp + "] " + playerName + " (" + uuid + ") "
                 + "INTEREST +$" + String.format("%,.2f", interest)
-                + " (2% after 30 days, day " + day + ")"
+                + " (1.5% after 50 days, day " + day + ")"
                 + " | Bank balance: $" + String.format("%,.2f", newBalance);
         appendLog(line);
     }

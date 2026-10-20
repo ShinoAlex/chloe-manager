@@ -90,7 +90,7 @@ public class BankController implements CommandExecutor, TabCompleter, Listener {
                 if (p != null && p.isOnline()) {
                     p.sendMessage(PREFIX + ChatColor.GREEN + "💰 Lãi suất đã được cộng! +"
                             + ChatColor.GOLD + "$" + FMT.format(interest)
-                            + ChatColor.GREEN + " (2% sau 30 ngày MC)."
+                            + ChatColor.GREEN + " (1.5% sau 50 ngày MC)."
                             + ChatColor.GREEN + " Bank: "
                             + ChatColor.GOLD + "$" + FMT.format(newBal));
                 }
@@ -267,8 +267,8 @@ public class BankController implements CommandExecutor, TabCompleter, Listener {
         player.sendMessage(ChatColor.YELLOW + "  /withdraw <số tiền|all>"
                 + ChatColor.GRAY + " — Rút tiền từ bank");
         player.sendMessage(d);
-        player.sendMessage(ChatColor.LIGHT_PURPLE + "  Lãi suất: 2% mỗi 30 ngày Minecraft");
-        player.sendMessage(ChatColor.GRAY + "  1 ngày MC = 20 phút thực | 30 ngày = 10 giờ");
+        player.sendMessage(ChatColor.LIGHT_PURPLE + "  Lãi suất: 1.5% mỗi 50 ngày Minecraft");
+        player.sendMessage(ChatColor.GRAY + "  1 ngày MC = 20 phút thực | 50 ngày ≈ 16.6 giờ");
         player.sendMessage(d);
     }
 

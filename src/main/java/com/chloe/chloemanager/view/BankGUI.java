@@ -74,7 +74,7 @@ public class BankGUI {
         inv.setItem(SLOT_INTEREST, makeInfoItem(Material.EXPERIENCE_BOTTLE,
                 ChatColor.LIGHT_PURPLE + "Lãi suất",
                 Arrays.asList(
-                        ChatColor.AQUA + "2% mỗi 30 ngày MC",
+                        ChatColor.AQUA + "1.5% mỗi 50 ngày MC",
                         "",
                         ChatColor.GRAY + "Ngày còn lại: " + ChatColor.WHITE + daysLeft + " ngày",
                         ChatColor.GRAY + "(1 ngày MC = 20 phút thực)"
