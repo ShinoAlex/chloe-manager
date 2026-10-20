@@ -4,12 +4,14 @@ import com.chloe.chloemanager.controller.AhController;
 import com.chloe.chloemanager.controller.BankController;
 import com.chloe.chloemanager.controller.EconomyController;
 import com.chloe.chloemanager.controller.HelloController;
+import com.chloe.chloemanager.controller.HomeController;
 import com.chloe.chloemanager.controller.KillRewardController;
 import com.chloe.chloemanager.controller.ShopController;
 import com.chloe.chloemanager.controller.TaixiuController;
 import com.chloe.chloemanager.model.AhModel;
 import com.chloe.chloemanager.model.BankModel;
 import com.chloe.chloemanager.model.EconomyModel;
+import com.chloe.chloemanager.model.HomeModel;
 import com.chloe.chloemanager.model.PlayerDataModel;
 import com.chloe.chloemanager.model.SellPriceRegistry;
 import com.chloe.chloemanager.model.ShopRegistry;
@@ -73,6 +75,10 @@ public final class ChloeManagerPlugin extends JavaPlugin {
     private BankModel      bankModel;
     private BankGUI        bankGUI;
     private BankController bankController;
+
+    // Home feature
+    private HomeModel      homeModel;
+    private HomeController homeController;
 
     @Override
     public void onEnable() {
@@ -161,6 +167,14 @@ public final class ChloeManagerPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(bankController, this);
         bankController.startInterestTask();
+
+        // ── Home feature ──────────────────────────────────────────────────
+        homeModel      = new HomeModel(this);
+        homeController = new HomeController(this, homeModel, economyModel);
+
+        getCommand("sethome").setExecutor(homeController);
+        getCommand("home").setExecutor(homeController);
+        getServer().getPluginManager().registerEvents(homeController, this);
 
         getLogger().info("ChloeManager enabled!");
     }

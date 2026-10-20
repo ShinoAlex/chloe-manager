@@ -1,5 +1,5 @@
 name: ChloeManager
-version: 1.4.0
+version: 1.5.0
 main: com.chloe.chloemanager.ChloeManagerPlugin
 api-version: 1.20
 description: A Minecraft plugin built with MVC architecture
@@ -67,6 +67,16 @@ commands:
     usage: /withdraw <amount|all>
     permission: chloemanager.bank
 
+  sethome:
+    description: Set your home location
+    usage: /sethome
+    permission: chloemanager.home
+
+  home:
+    description: Teleport to your home ($1000, 5s warmup, cancels on damage)
+    usage: /home
+    permission: chloemanager.home
+
 permissions:
   chloemanager.hello:
     description: Allows use of the /hello command
@@ -102,6 +112,10 @@ permissions:
 
   chloemanager.bank:
     description: Allows use of /bank, /deposit, /withdraw
+    default: true
+
+  chloemanager.home:
+    description: Allows use of /sethome and /home
     default: true
 
   chloemanager.admin:

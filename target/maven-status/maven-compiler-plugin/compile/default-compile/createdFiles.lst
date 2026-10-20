@@ -15,6 +15,7 @@ com\chloe\chloemanager\controller\TaixiuController$1.class
 com\chloe\chloemanager\model\ShopRegistry.class
 com\chloe\chloemanager\controller\ShopController.class
 com\chloe\chloemanager\model\TaixiuModel$DiceResult.class
+com\chloe\chloemanager\controller\HomeController$1.class
 com\chloe\chloemanager\model\TaixiuModel$BetSide.class
 com\chloe\chloemanager\view\PlayerView.class
 com\chloe\chloemanager\controller\BankController.class
@@ -23,6 +24,8 @@ com\chloe\chloemanager\model\BankModel.class
 com\chloe\chloemanager\view\BankGUI.class
 com\chloe\chloemanager\controller\TaixiuController$2.class
 com\chloe\chloemanager\controller\BankController$1.class
+com\chloe\chloemanager\model\HomeModel.class
+com\chloe\chloemanager\controller\HomeController.class
 com\chloe\chloemanager\controller\AhController.class
 com\chloe\chloemanager\model\AhModel.class
 com\chloe\chloemanager\model\ShopRegistry$ShopCategory.class
