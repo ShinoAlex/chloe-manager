@@ -1,5 +1,5 @@
 name: ChloeManager
-version: 1.5.0
+version: 1.6.0
 main: com.chloe.chloemanager.ChloeManagerPlugin
 api-version: 1.20
 description: A Minecraft plugin built with MVC architecture
@@ -68,14 +68,24 @@ commands:
     permission: chloemanager.bank
 
   sethome:
-    description: Set your home location
-    usage: /sethome
+    description: Set your home location (slots 1-3)
+    usage: /sethome [1|2|3]
     permission: chloemanager.home
 
   home:
     description: Teleport to your home ($1000, 5s warmup, cancels on damage)
-    usage: /home
+    usage: /home [1|2|3]
     permission: chloemanager.home
+
+  boss:
+    description: Open the boss trade GUI (Essence of Life -> legendary pickaxe)
+    usage: /boss
+    permission: chloemanager.boss
+
+  clan:
+    description: Manage your clan (create, add, kick, delete, inventory, leave)
+    usage: /clan <create|add|kick|delete|inventory|leave|info> [args]
+    permission: chloemanager.clan
 
 permissions:
   chloemanager.hello:
@@ -116,6 +126,14 @@ permissions:
 
   chloemanager.home:
     description: Allows use of /sethome and /home
+    default: true
+
+  chloemanager.boss:
+    description: Allows use of /boss trade GUI
+    default: true
+
+  chloemanager.clan:
+    description: Allows use of /clan commands
     default: true
 
   chloemanager.admin:

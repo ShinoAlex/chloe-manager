@@ -12,7 +12,7 @@ import java.util.*;
  *
  * To add new items: add an entry inside the relevant registerXxx() method.
  * To add a new category: create a new ShopCategory enum value, add a
- * registerXxx() call in the constructor, and add an icon/label in ShopGUI.
+ * registerXxx() call in the constructor, and the GUI picks it up automatically.
  */
 public class ShopRegistry {
 
@@ -21,10 +21,11 @@ public class ShopRegistry {
     // -------------------------------------------------------------------------
 
     public enum ShopCategory {
-        BLOCKS       ("⬛ Blocks",        Material.STONE),
-        WOOD         ("🌲 Wood",           Material.OAK_LOG),
-        WOOL         ("🐑 Wool",           Material.WHITE_WOOL),
-        SPECIAL      ("⭐ Special Items",  Material.DIAMOND);
+        BLOCKS       ("\u2b1b Blocks",        Material.STONE),
+        WOOD         ("\ud83c\udf33 Wood",           Material.OAK_LOG),
+        WOOL         ("\ud83d\udc11 Wool",           Material.WHITE_WOOL),
+        SPECIAL      ("\u2b50 Special Items",  Material.DIAMOND),
+        HOMES        ("\ud83c\udfe0 Homes",          Material.RED_BED);
 
         private final String displayName;
         private final Material icon;
@@ -42,9 +43,33 @@ public class ShopRegistry {
     // ShopEntry — one purchasable item
     // -------------------------------------------------------------------------
 
-    public record ShopEntry(Material material, double buyPrice, int stackSize) {
-        /** Display-friendly name: OAK_LOG → "Oak Log" */
+    /**
+     * A single purchasable entry.
+     *
+     * For normal items {@code customAction} is null and the purchase simply
+     * gives the player the material.  When {@code customAction} is non-null
+     * the ShopController interprets it as a special purchase (e.g. "sethome:2"
+     * unlocks an extra home slot) and no item is given.
+     */
+    public record ShopEntry(Material material, double buyPrice, int stackSize,
+                            String customName, String customAction) {
+
+        public ShopEntry(Material material, double buyPrice, int stackSize) {
+            this(material, buyPrice, stackSize, null, null);
+        }
+
+        public ShopEntry(Material material, double buyPrice, int stackSize,
+                         String customName, String customAction) {
+            this.material   = material;
+            this.buyPrice    = buyPrice;
+            this.stackSize   = stackSize;
+            this.customName  = customName;
+            this.customAction = customAction;
+        }
+
+        /** Display-friendly name: OAK_LOG → "Oak Log", or the custom name if set. */
         public String displayName() {
+            if (customName != null) return customName;
             String raw = material.name().replace('_', ' ').toLowerCase();
             StringBuilder sb = new StringBuilder();
             for (String word : raw.split(" ")) {
@@ -71,6 +96,7 @@ public class ShopRegistry {
         registerWood();
         registerWool();
         registerSpecial();
+        registerHomes();
     }
 
     // -------------------------------------------------------------------------
@@ -99,6 +125,11 @@ public class ShopRegistry {
 
     private void add(ShopCategory cat, Material mat, double price, int stackSize) {
         catalog.get(cat).add(new ShopEntry(mat, price, stackSize));
+    }
+
+    private void addSpecial(ShopCategory cat, Material mat, double price,
+                            String customName, String customAction) {
+        catalog.get(cat).add(new ShopEntry(mat, price, 1, customName, customAction));
     }
 
     private void registerBlocks() {
@@ -210,7 +241,7 @@ public class ShopRegistry {
         add(c, Material.BROWN_CARPET,    5.0);
         add(c, Material.GREEN_CARPET,    5.0);
         add(c, Material.RED_CARPET,      5.0);
-        add(c, Material.BLACK_CARPET,    5.0);
+        add(c, Material.BLACK_CARPET,     5.0);
     }
 
     private void registerSpecial() {
@@ -230,5 +261,15 @@ public class ShopRegistry {
         add(c, Material.EXPERIENCE_BOTTLE,    1500.0);
         //add(c, Material.END_CRYSTAL,          150.0);
         //add(c, Material.TRIDENT,              600.0);
+    }
+
+    /**
+     * Extra home slots — these are special purchases (no item given).
+     * Slot 2 costs $200,000; slot 3 costs $1,000,000.
+     */
+    private void registerHomes() {
+        ShopCategory c = ShopCategory.HOMES;
+        addSpecial(c, Material.RED_BED,  200_000.0, "Extra Home Slot #2", "sethome:2");
+        addSpecial(c, Material.RED_BED, 1_000_000.0, "Extra Home Slot #3", "sethome:3");
     }
 }

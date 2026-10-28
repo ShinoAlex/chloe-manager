@@ -160,14 +160,25 @@ public class ShopGUI {
         ItemMeta meta = item.getItemMeta();
 
         meta.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + entry.displayName());
-        meta.setLore(Arrays.asList(
-                "",
-                ChatColor.GRAY + "Buy price: " + ChatColor.GOLD + "$" + FMT.format(entry.buyPrice()),
-                ChatColor.GRAY + "You receive: " + ChatColor.WHITE + "x" + entry.stackSize(),
-                "",
-                ChatColor.GREEN + "Left-click " + ChatColor.GRAY + "to purchase",
-                ChatColor.AQUA  + "Right-click " + ChatColor.GRAY + "to buy x64"
-        ));
+
+        // Special (non-item) entries get a different, cleaner lore
+        if (entry.customAction() != null) {
+            meta.setLore(Arrays.asList(
+                    "",
+                    ChatColor.GRAY + "Price: " + ChatColor.GOLD + "$" + FMT.format(entry.buyPrice()),
+                    "",
+                    ChatColor.GREEN + "Click " + ChatColor.GRAY + "to purchase"
+            ));
+        } else {
+            meta.setLore(Arrays.asList(
+                    "",
+                    ChatColor.GRAY + "Buy price: " + ChatColor.GOLD + "$" + FMT.format(entry.buyPrice()),
+                    ChatColor.GRAY + "You receive: " + ChatColor.WHITE + "x" + entry.stackSize(),
+                    "",
+                    ChatColor.GREEN + "Left-click " + ChatColor.GRAY + "to purchase",
+                    ChatColor.AQUA  + "Right-click " + ChatColor.GRAY + "to buy x64"
+            ));
+        }
 
         item.setItemMeta(meta);
         return item;

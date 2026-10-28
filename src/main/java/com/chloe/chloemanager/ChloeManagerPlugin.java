@@ -2,6 +2,8 @@ package com.chloe.chloemanager;
 
 import com.chloe.chloemanager.controller.AhController;
 import com.chloe.chloemanager.controller.BankController;
+import com.chloe.chloemanager.controller.BossController;
+import com.chloe.chloemanager.controller.ClanController;
 import com.chloe.chloemanager.controller.EconomyController;
 import com.chloe.chloemanager.controller.HelloController;
 import com.chloe.chloemanager.controller.HomeController;
@@ -10,6 +12,8 @@ import com.chloe.chloemanager.controller.ShopController;
 import com.chloe.chloemanager.controller.TaixiuController;
 import com.chloe.chloemanager.model.AhModel;
 import com.chloe.chloemanager.model.BankModel;
+import com.chloe.chloemanager.model.BossModel;
+import com.chloe.chloemanager.model.ClanModel;
 import com.chloe.chloemanager.model.EconomyModel;
 import com.chloe.chloemanager.model.HomeModel;
 import com.chloe.chloemanager.model.PlayerDataModel;
@@ -19,6 +23,9 @@ import com.chloe.chloemanager.model.TaixiuLog;
 import com.chloe.chloemanager.model.TaixiuModel;
 import com.chloe.chloemanager.view.AhGUI;
 import com.chloe.chloemanager.view.BankGUI;
+import com.chloe.chloemanager.view.BossGUI;
+import com.chloe.chloemanager.view.BossView;
+import com.chloe.chloemanager.view.ClanView;
 import com.chloe.chloemanager.view.EconomyView;
 import com.chloe.chloemanager.view.PlayerView;
 import com.chloe.chloemanager.view.SellGUI;
@@ -52,6 +59,10 @@ public final class ChloeManagerPlugin extends JavaPlugin {
     private SellGUI           sellGUI;
     private EconomyController economyController;
 
+    // Home feature (initialized before Shop so ShopController can inject HomeModel)
+    private HomeModel      homeModel;
+    private HomeController homeController;
+
     // Shop feature
     private ShopRegistry   shopRegistry;
     private ShopGUI        shopGUI;
@@ -76,9 +87,16 @@ public final class ChloeManagerPlugin extends JavaPlugin {
     private BankGUI        bankGUI;
     private BankController bankController;
 
-    // Home feature
-    private HomeModel      homeModel;
-    private HomeController homeController;
+    // Boss fight feature
+    private BossModel      bossModel;
+    private BossView       bossView;
+    private BossGUI        bossGUI;
+    private BossController bossController;
+
+    // Clan feature
+    private ClanModel      clanModel;
+    private ClanView       clanView;
+    private ClanController clanController;
 
     @Override
     public void onEnable() {
@@ -117,10 +135,21 @@ public final class ChloeManagerPlugin extends JavaPlugin {
         // Register GUI event listener
         getServer().getPluginManager().registerEvents(economyController, this);
 
+        // ── Home feature (before Shop — ShopController needs HomeModel) ─────
+        homeModel      = new HomeModel(this);
+        homeController = new HomeController(this, homeModel, economyModel);
+
+        getCommand("sethome").setExecutor(homeController);
+        getCommand("sethome").setTabCompleter(homeController);
+        getCommand("home").setExecutor(homeController);
+        getCommand("home").setTabCompleter(homeController);
+        getServer().getPluginManager().registerEvents(homeController, this);
+
         // ── Shop feature ─────────────────────────────────────────────────
         shopRegistry   = new ShopRegistry();
         shopGUI        = new ShopGUI(shopRegistry);
-        shopController = new ShopController(economyModel, shopRegistry, economyView, shopGUI);
+        shopController = new ShopController(
+                economyModel, shopRegistry, economyView, shopGUI, homeModel);
 
         getCommand("shop").setExecutor(shopController);
         getServer().getPluginManager().registerEvents(shopController, this);
@@ -168,19 +197,32 @@ public final class ChloeManagerPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(bankController, this);
         bankController.startInterestTask();
 
-        // ── Home feature ──────────────────────────────────────────────────
-        homeModel      = new HomeModel(this);
-        homeController = new HomeController(this, homeModel, economyModel);
+        // ── Boss fight feature ───────────────────────────────────────────
+        bossModel      = new BossModel(this);
+        bossView       = new BossView();
+        bossGUI        = new BossGUI(bossModel);
+        bossController = new BossController(this, bossModel, economyModel, bossView, bossGUI);
 
-        getCommand("sethome").setExecutor(homeController);
-        getCommand("home").setExecutor(homeController);
-        getServer().getPluginManager().registerEvents(homeController, this);
+        getCommand("boss").setExecutor(bossController);
+        getServer().getPluginManager().registerEvents(bossController, this);
+        bossController.startTasks();
+
+        // ── Clan feature ──────────────────────────────────────────────────
+        clanModel      = new ClanModel(this);
+        clanView       = new ClanView();
+        clanController = new ClanController(this, clanModel, economyModel, clanView);
+
+        getCommand("clan").setExecutor(clanController);
+        getCommand("clan").setTabCompleter(clanController);
+        getServer().getPluginManager().registerEvents(clanController, this);
 
         getLogger().info("ChloeManager enabled!");
     }
 
     @Override
     public void onDisable() {
+        if (bossController  != null) bossController.stopTasks();
+        if (clanModel       != null) clanModel.save();
         if (taixiuController != null) taixiuController.stopLoop();
         if (ahController     != null) ahController.stopExpiryTask();
         if (bankController   != null) bankController.stopInterestTask();

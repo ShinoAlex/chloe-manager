@@ -1,6 +1,7 @@
 package com.chloe.chloemanager.controller;
 
 import com.chloe.chloemanager.model.EconomyModel;
+import com.chloe.chloemanager.model.HomeModel;
 import com.chloe.chloemanager.model.ShopRegistry;
 import com.chloe.chloemanager.model.ShopRegistry.ShopCategory;
 import com.chloe.chloemanager.model.ShopRegistry.ShopEntry;
@@ -32,9 +33,8 @@ import java.util.UUID;
  *   GUI navigation — category selection, pagination, back button
  *   Purchases      — left-click = buy x1 (or entry stackSize),
  *                    right-click = buy x64 (capped by stack size)
- *
- * Player state (current category + page) is tracked in memory so the GUI
- * can be refreshed in-place without reopening it.
+ *   Special purchases — entries with a customAction (e.g. sethome purchases)
+ *                    are handled without giving an item.
  */
 public class ShopController implements CommandExecutor, Listener {
 
@@ -45,6 +45,7 @@ public class ShopController implements CommandExecutor, Listener {
     private final ShopRegistry  registry;
     private final EconomyView   economyView;
     private final ShopGUI       gui;
+    private final HomeModel      homeModel;   // for sethome purchases
 
     // ── Per-player GUI state ─────────────────────────────────────────────────
     /** Which category each player is currently browsing (null = main menu). */
@@ -55,11 +56,13 @@ public class ShopController implements CommandExecutor, Listener {
     public ShopController(EconomyModel economyModel,
                           ShopRegistry registry,
                           EconomyView economyView,
-                          ShopGUI gui) {
+                          ShopGUI gui,
+                          HomeModel homeModel) {
         this.economyModel = economyModel;
         this.registry     = registry;
         this.economyView  = economyView;
         this.gui          = gui;
+        this.homeModel    = homeModel;
     }
 
     // =========================================================================
@@ -176,6 +179,12 @@ public class ShopController implements CommandExecutor, Listener {
 
         ShopEntry entry = entries.get(index);
 
+        // For special (non-item) entries, qty is irrelevant — just purchase once
+        if (entry.customAction() != null) {
+            executeSpecialPurchase(player, inv, entry);
+            return;
+        }
+
         // Determine quantity: left-click = stackSize, right-click = 64
         int qty = (clickType == ClickType.RIGHT || clickType == ClickType.SHIFT_RIGHT)
                 ? 64
@@ -185,14 +194,9 @@ public class ShopController implements CommandExecutor, Listener {
     }
 
     // =========================================================================
-    // Purchase logic
+    // Normal item purchase
     // =========================================================================
 
-    /**
-     * Attempts to buy {@code qty} units of {@code entry} for {@code player}.
-     * Deducts from balance, gives items, and refreshes the balance display.
-     * The GUI stays open.
-     */
     private void executePurchase(Player player, Inventory inv,
                                  ShopEntry entry, int qty) {
         double totalCost = entry.buyPrice() * qty;
@@ -230,6 +234,77 @@ public class ShopController implements CommandExecutor, Listener {
                 + ChatColor.GOLD + "$" + FMT.format(newBalance));
 
         // Refresh the balance display without reopening the GUI
+        gui.refreshBalance(inv, newBalance);
+    }
+
+    // =========================================================================
+    // Special purchase (non-item, e.g. extra home slot)
+    // =========================================================================
+
+    private void executeSpecialPurchase(Player player, Inventory inv, ShopEntry entry) {
+        UUID uuid = player.getUniqueId();
+        String action = entry.customAction();
+
+        if (action == null) return;
+
+        if (action.startsWith("sethome:")) {
+            handleSetHomePurchase(player, inv, entry,
+                    Integer.parseInt(action.substring("sethome:".length())));
+        }
+    }
+
+    /**
+     * Unlocks an additional home slot for the player.
+     *
+     * @param targetSlot The home slot index to unlock (2 or 3).
+     */
+    private void handleSetHomePurchase(Player player, Inventory inv,
+                                       ShopEntry entry, int targetSlot) {
+        UUID uuid = player.getUniqueId();
+
+        // Already unlocked?
+        if (homeModel.isSlotUnlocked(uuid, targetSlot)) {
+            player.sendMessage(ChatColor.RED + "[Shop] " + ChatColor.RESET
+                    + "You already have Home Slot #" + targetSlot + " unlocked!");
+            return;
+        }
+
+        // Enforce ordering: slot 3 requires slot 2 first
+        if (targetSlot == 3 && !homeModel.isSlotUnlocked(uuid, 2)) {
+            player.sendMessage(ChatColor.RED + "[Shop] " + ChatColor.RESET
+                    + "You must buy Home Slot #2 first!");
+            return;
+        }
+
+        double balance = economyModel.getBalance(uuid);
+        if (balance < entry.buyPrice()) {
+            player.sendMessage(ChatColor.RED + "[Shop] " + ChatColor.RESET
+                    + "Not enough money! You need "
+                    + ChatColor.GOLD + "$" + FMT.format(entry.buyPrice())
+                    + ChatColor.RESET + " but only have "
+                    + ChatColor.GOLD + "$" + FMT.format(balance) + ".");
+            return;
+        }
+
+        // Deduct money and unlock the slot
+        economyModel.withdraw(uuid, entry.buyPrice());
+        homeModel.unlockHomeSlot(uuid);
+
+        double newBalance = economyModel.getBalance(uuid);
+        player.sendMessage(
+                ChatColor.GOLD + "[Shop] " + ChatColor.GREEN + "Unlocked "
+                + ChatColor.YELLOW + entry.displayName()
+                + ChatColor.GREEN + " for "
+                + ChatColor.GOLD + "$" + FMT.format(entry.buyPrice())
+                + ChatColor.GREEN + "! Balance: "
+                + ChatColor.GOLD + "$" + FMT.format(newBalance));
+        player.sendMessage(ChatColor.AQUA + "[Shop] " + ChatColor.GRAY
+                + "Use " + ChatColor.AQUA + "/sethome " + targetSlot
+                + ChatColor.GRAY + " to set it and "
+                + ChatColor.AQUA + "/home " + targetSlot
+                + ChatColor.GRAY + " to teleport there.");
+
+        // Refresh the balance display
         gui.refreshBalance(inv, newBalance);
     }
 
