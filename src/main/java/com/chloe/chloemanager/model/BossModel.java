@@ -165,10 +165,6 @@ public class BossModel {
         private volatile long lastSkillTime3;
         private volatile long lastSonicBoomTime;
         private volatile long lastPlayerNearbyTime;  // ms — resets whenever a player is in range
-        private volatile double lastX;
-        private volatile double lastY;
-        private volatile double lastZ;
-        private volatile long lastMovedTime;
 
         public BossInstance(UUID entityId, BossDifficulty difficulty) {
             this.entityId   = entityId;
@@ -179,7 +175,6 @@ public class BossModel {
             this.lastSkillTime3 = 0;
             this.lastSonicBoomTime = 0;
             this.lastPlayerNearbyTime = System.currentTimeMillis(); // grace period from spawn
-            this.lastMovedTime = System.currentTimeMillis();
         }
 
         public UUID getEntityId()            { return entityId; }
@@ -195,15 +190,5 @@ public class BossModel {
         public void setLastSonicBoomTime(long t)  { lastSonicBoomTime = t; }
         public long getLastPlayerNearbyTime()          { return lastPlayerNearbyTime; }
         public void setLastPlayerNearbyTime(long t)    { lastPlayerNearbyTime = t; }
-        public double getLastX()                       { return lastX; }
-        public double getLastY()                       { return lastY; }
-        public double getLastZ()                       { return lastZ; }
-        public void setLastPos(double x, double y, double z) {
-            this.lastX = x;
-            this.lastY = y;
-            this.lastZ = z;
-        }
-        public long getLastMovedTime()                 { return lastMovedTime; }
-        public void setLastMovedTime(long t)           { this.lastMovedTime = t; }
     }
 }

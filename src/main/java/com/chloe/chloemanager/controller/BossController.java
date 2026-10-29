@@ -31,7 +31,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -138,15 +137,6 @@ public class BossController implements CommandExecutor, Listener {
     private final BossView      view;
     private final BossGUI       gui;
     private final Random       random = new Random();
-
-    // ── Boss Combat State Tracking ───────────────────────────────────────────
-    private static final long   TOTEM_COOLDOWN_MS      = 60_000L;  // 60s cooldown per player between Totem uses against boss
-    // Player UUID -> Timestamp until which player cannot trigger another Totem against a boss
-    private final Map<UUID, Long> totemCooldownMap = new HashMap<>();
-    // Player UUID -> Timestamp until which player is completely immune to boss attacks (after totem pops)
-    private final Map<UUID, Long> totemGraceMap = new HashMap<>();
-    // Boss UUID -> Timestamp until which boss cannot melee attack any player (attack cooldown)
-    private final Map<UUID, Long> bossAttackCooldownMap = new HashMap<>();
 
     private BukkitTask spawnTask;
     private BukkitTask skillTask;
@@ -304,47 +294,23 @@ public class BossController implements CommandExecutor, Listener {
     }
 
     private void scaleAttributes(LivingEntity boss, BossDifficulty diff) {
-        // Flat Base Health
         AttributeInstance maxHealth = boss.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (maxHealth != null) {
-            double newMax = Math.min(diff.getBaseHealth(), MAX_HEALTH_CAP);
+            double newMax = Math.min(
+                    maxHealth.getBaseValue() * diff.getHealthMultiplier(),
+                    MAX_HEALTH_CAP);
             maxHealth.setBaseValue(newMax);
             try {
                 boss.setHealth(newMax);
             } catch (Exception ignored) { }
         }
-
-        // Damage Multiplier on natural attack damage
         AttributeInstance attack = boss.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
         if (attack != null) {
-            double baseAtk = attack.getBaseValue();
-            if (baseAtk <= 0.0) baseAtk = 2.0;
-            attack.setBaseValue(baseAtk * diff.getDamageMultiplier());
+            attack.setBaseValue(attack.getBaseValue() * diff.getDamageMultiplier());
         }
-
-        // Speed Multiplier (Sanely capped so it is not lightning fast)
         AttributeInstance speed = boss.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         if (speed != null) {
-            double currentSpeed = speed.getBaseValue();
-            double targetSpeed = currentSpeed * diff.getSpeedMultiplier();
-            // Cap absolute speed at 0.35 so players can always track and hit it
-            speed.setBaseValue(Math.min(targetSpeed, 0.35));
-        }
-
-        // Armor & Toughness so boss doesn't melt to high-tier weapons / Power V bows
-        AttributeInstance armor = boss.getAttribute(Attribute.GENERIC_ARMOR);
-        if (armor != null) {
-            armor.setBaseValue(diff.getArmor());
-        }
-        AttributeInstance toughness = boss.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS);
-        if (toughness != null) {
-            toughness.setBaseValue(Math.max(4.0, diff.getArmor() / 2.0));
-        }
-
-        // Knockback resistance (prevents player from juggling boss in air)
-        AttributeInstance kbRes = boss.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
-        if (kbRes != null) {
-            kbRes.setBaseValue(0.5);
+            speed.setBaseValue(speed.getBaseValue() * diff.getSpeedMultiplier());
         }
     }
 
@@ -407,12 +373,6 @@ public class BossController implements CommandExecutor, Listener {
                 }
             }
 
-            // ── Water & Lava Resistance ─────────────────────────────────────────
-            handleFluidResistance(boss);
-
-            // ── Anti-Stuck & Wall Breach ─────────────────────────────────────────
-            handleAntiStuck(boss, bi);
-
             useSkill(boss, bi);
         }
     }
@@ -458,11 +418,9 @@ public class BossController implements CommandExecutor, Listener {
                     leapAttack(boss, target);
                     bi.setLastSkillTime2(now);
                 }
-                // Skill 3: Summon swarm of minions (35s CD) - scales with nearby players
+                // Skill 3: Summon 1 minion (35s CD)
                 if (now - bi.getLastSkillTime3() > 35_000) {
-                    int nearbyPlayers = countNearbyPlayers(boss, SKILL_RANGE);
-                    int minionCount = Math.min(12, Math.max(4, nearbyPlayers * 2 + 1)); // 4-12 minions
-                    summonMinions(boss, minionCount);
+                    summonMinions(boss, 1);
                     bi.setLastSkillTime3(now);
                 }
             }
@@ -487,12 +445,9 @@ public class BossController implements CommandExecutor, Listener {
             }
             // ── HARD: 3 skills ──────────────────────────────────────────────────
             case HARD -> {
-                // Skill 1: Summon 5-10 minions (25s CD) or scaled by player count
+                // Skill 1: Summon 2 minions (25s CD)
                 if (now - bi.getLastSkillTime() > 25_000) {
-                    int nearbyPlayers = countNearbyPlayers(boss, SKILL_RANGE);
-                    int base = 5 + random.nextInt(6); // 5 to 10 minions
-                    int minionCount = Math.min(15, Math.max(base, nearbyPlayers * 3)); // up to 15 max
-                    summonMinions(boss, minionCount);
+                    summonMinions(boss, 2);
                     bi.setLastSkillTime(now);
                 }
                 // Skill 2: Wither II on target (15s CD)
@@ -549,60 +504,20 @@ public class BossController implements CommandExecutor, Listener {
 
     private void summonMinions(LivingEntity boss, int count) {
         EntityType type = boss.getType();
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < 2; i++) {
             Location loc = boss.getLocation().add(
                     random.nextDouble() * 4 - 2, 0, random.nextDouble() * 4 - 2);
             try {
                 Entity minion = boss.getWorld().spawnEntity(loc, type);
                 if (minion instanceof LivingEntity m) {
-                    // Distinct, subtle name tag
-                    m.setCustomName(ChatColor.DARK_GRAY + "[" + ChatColor.RED + "Minion" + ChatColor.DARK_GRAY + "]");
+                    m.setCustomName(ChatColor.RED + "Boss Minion");
                     m.setCustomNameVisible(true);
                     m.setRemoveWhenFarAway(true);
-                    m.setGlowing(false); // Only boss glows
-
-                    // Make minion visibly smaller
-                    if (m instanceof org.bukkit.entity.Ageable ageable) {
-                        ageable.setBaby();
-                    } else if (m instanceof org.bukkit.entity.Zombie zombie) {
-                        zombie.setBaby();
-                    } else if (m instanceof org.bukkit.entity.Piglin piglin) {
-                        piglin.setBaby();
-                    } else if (m instanceof org.bukkit.entity.Zoglin zoglin) {
-                        zoglin.setBaby();
-                    }
-
-                    // For newer MC versions, try GENERIC_SCALE if available
-                    try {
-                        Attribute scaleAttr = Attribute.valueOf("GENERIC_SCALE");
-                        AttributeInstance inst = m.getAttribute(scaleAttr);
-                        if (inst != null) {
-                            inst.setBaseValue(0.7); // 30% smaller
-                        }
-                    } catch (Exception ignored) { }
-
-                    // Weaker stats: Fragile HP (15 HP ~ 1-2 sword hits)
-                    AttributeInstance hp = m.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                    if (hp != null) {
-                        hp.setBaseValue(20.0);
-                        m.setHealth(20.0);
-                    }
-
-                    // Weaker attack damage (3 damage = 1.5 hearts)
-                    AttributeInstance atk = m.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-                    if (atk != null) {
-                        atk.setBaseValue(3.0);
-                    }
-
-                    // Remove any armor to keep it squishy
-                    if (m.getEquipment() != null) {
-                        m.getEquipment().clear();
-                    }
                 }
             } catch (Exception ignored) { }
         }
         boss.getWorld().playSound(boss.getLocation(),
-                Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.6f);
+                Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.5f);
     }
 
     private Player findNearestPlayer(LivingEntity boss, double range) {
@@ -618,19 +533,6 @@ public class BossController implements CommandExecutor, Listener {
             }
         }
         return nearest;
-    }
-
-    private int countNearbyPlayers(LivingEntity boss, double range) {
-        int count = 0;
-        double rangeSq = range * range;
-        for (Player p : boss.getWorld().getPlayers()) {
-            if (p.getGameMode() == org.bukkit.GameMode.SPECTATOR || p.getGameMode() == org.bukkit.GameMode.CREATIVE) continue;
-            if (p.isDead()) continue;
-            if (p.getLocation().distanceSquared(boss.getLocation()) <= rangeSq) {
-                count++;
-            }
-        }
-        return Math.max(1, count);
     }
 
     // ── Skill helpers ──────────────────────────────────────────────────────────
@@ -685,116 +587,6 @@ public class BossController implements CommandExecutor, Listener {
                 Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.8f, 1.0f);
     }
 
-    // ── Fluid & Anti-Stuck Handlers ──────────────────────────────────────────
-
-    /**
-     * Prevents boss from being slowed down or cheesed in water/lava.
-     */
-    private void handleFluidResistance(LivingEntity boss) {
-        Block feet = boss.getLocation().getBlock();
-        Block head = boss.getEyeLocation().getBlock();
-        boolean inWater = feet.getType() == Material.WATER || head.getType() == Material.WATER;
-        boolean inLava  = feet.getType() == Material.LAVA  || head.getType() == Material.LAVA;
-
-        if (inWater || inLava) {
-            // Give Dolphins Grace / Speed II and boost velocity towards nearest player
-            boss.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 60, 1, false, false));
-            boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 60, 2, false, false));
-
-            Player nearest = findNearestPlayer(boss, 30.0);
-            if (nearest != null) {
-                Vector dir = nearest.getLocation().toVector().subtract(boss.getLocation().toVector());
-                if (dir.lengthSquared() > 0.01) {
-                    dir.normalize().multiply(0.4);
-                    dir.setY(0.2); // keep head above surface
-                    boss.setVelocity(boss.getVelocity().add(dir));
-                }
-            }
-        }
-    }
-
-    /**
-     * Detects if boss is stuck inside a wall or hasn't moved towards player in 10s.
-     * When stuck, creates an explosive shockwave clearing nearby blocks and teleports/leaps to player.
-     */
-    private void handleAntiStuck(LivingEntity boss, BossInstance bi) {
-        long now = System.currentTimeMillis();
-        Location currentLoc = boss.getLocation();
-        Block eyeBlock = boss.getEyeLocation().getBlock();
-        boolean suffocatingInWall = eyeBlock.getType().isSolid();
-
-        double distMovedSq = Math.pow(currentLoc.getX() - bi.getLastX(), 2)
-                           + Math.pow(currentLoc.getZ() - bi.getLastZ(), 2);
-
-        Player nearest = findNearestPlayer(boss, 40.0);
-
-        if (distMovedSq > 1.0) {
-            bi.setLastPos(currentLoc.getX(), currentLoc.getY(), currentLoc.getZ());
-            bi.setLastMovedTime(now);
-        }
-
-        boolean stationaryTooLong = (nearest != null) && (now - bi.getLastMovedTime() > 10_000L);
-
-        if (suffocatingInWall || stationaryTooLong) {
-            // 1) Trigger a wall-clearing breach explosion around boss
-            breachWallAroundBoss(boss);
-
-            // 2) Rush or teleport close to the nearest player
-            if (nearest != null) {
-                Location playerLoc = nearest.getLocation();
-                Location targetLoc = findSafeTeleportLocation(playerLoc, boss.getLocation(), 3.0);
-                if (targetLoc != null) {
-                    boss.getWorld().spawnParticle(Particle.PORTAL, boss.getLocation(), 40, 0.5, 1.0, 0.5, 0.1);
-                    boss.teleport(targetLoc);
-                    boss.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, targetLoc, 2);
-                    boss.getWorld().playSound(targetLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.2f);
-                    nearest.sendMessage(ChatColor.DARK_RED + "" + ChatColor.BOLD + "\u2620 "
-                            + bi.getDifficulty().getColor() + bi.getDifficulty().getDisplayName() + " Boss "
-                            + ChatColor.RED + "breached the walls and closed in on you!");
-                } else {
-                    // Fallback: Leap aggressively toward player
-                    leapAttack(boss, nearest);
-                }
-            }
-
-            // Reset tracking
-            bi.setLastPos(boss.getLocation().getX(), boss.getLocation().getY(), boss.getLocation().getZ());
-            bi.setLastMovedTime(now);
-        }
-    }
-
-    /**
-     * Creates an explosion effect that destroys obstructing soft/natural blocks in a 3x3x3 cube around boss,
-     * while protecting chests, bedrock, and player builds.
-     */
-    private void breachWallAroundBoss(LivingEntity boss) {
-        Location center = boss.getLocation();
-        World world = center.getWorld();
-        if (world == null) return;
-
-        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
-        world.spawnParticle(Particle.EXPLOSION_HUGE, center, 1);
-
-        int cx = center.getBlockX();
-        int cy = center.getBlockY();
-        int cz = center.getBlockZ();
-
-        for (int x = cx - 1; x <= cx + 1; x++) {
-            for (int y = cy; y <= cy + 2; y++) {
-                for (int z = cz - 1; z <= cz + 1; z++) {
-                    Block b = world.getBlockAt(x, y, z);
-                    Material mat = b.getType();
-                    // Don't break bedrock, containers, or indestructible materials
-                    if (!mat.isAir() && mat != Material.BEDROCK && mat != Material.BARRIER
-                            && mat != Material.CHEST && mat != Material.TRAPPED_CHEST
-                            && mat != Material.BARREL && mat != Material.SHULKER_BOX) {
-                        b.breakNaturally();
-                    }
-                }
-            }
-        }
-    }
-
     // =========================================================================
     // Boss death — rewards & essence drop
     // =========================================================================
@@ -841,193 +633,12 @@ public class BossController implements CommandExecutor, Listener {
     }
 
     // =========================================================================
-    // Boss Environmental & Explosion Immunities
-    // =========================================================================
-
-    @EventHandler
-    public void onBossGeneralDamage(EntityDamageEvent event) {
-        if (event.isCancelled()) return;
-        if (!(event.getEntity() instanceof LivingEntity victim) || !bossModel.isBoss(victim)) return;
-
-        EntityDamageEvent.DamageCause cause = event.getCause();
-        // Prevent boss from dying to terrain hazards: suffocation, drowning, lava, hot floor, or breach explosions.
-        // NOTE: FIRE_TICK is deliberately ALLOWED so Flame bows & Fire Aspect swords still burn the boss!
-        if (cause == EntityDamageEvent.DamageCause.SUFFOCATION
-                || cause == EntityDamageEvent.DamageCause.DROWNING
-                || cause == EntityDamageEvent.DamageCause.LAVA
-                || cause == EntityDamageEvent.DamageCause.HOT_FLOOR
-                || cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
-                || cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) {
-            event.setCancelled(true);
-        }
-    }
-
-    // =========================================================================
-    // Boss Combat Balance & Damage Handling
-    // =========================================================================
-
-    @EventHandler
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if (event.isCancelled()) return;
-        long now = System.currentTimeMillis();
-
-        // 1) Player attacks Boss (Damage Cap to prevent 1-shot from Power V Bows, Sharpness Netherite etc.)
-        if (event.getEntity() instanceof LivingEntity victim && bossModel.isBoss(victim)) {
-            BossDifficulty diff = bossModel.getBossDifficulty(victim);
-            if (diff != null) {
-                AttributeInstance maxHealthAttr = victim.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-                double maxHp = (maxHealthAttr != null) ? maxHealthAttr.getValue() : diff.getBaseHealth();
-                double maxAllowedDamage = maxHp * diff.getMaxDamageCapPercent();
-
-                if (event.getDamage() > maxAllowedDamage) {
-                    event.setDamage(maxAllowedDamage);
-                }
-            }
-            return;
-        }
-
-        // 2) Boss attacks Player (Direct melee attack or projectile)
-        Entity damager = event.getDamager();
-        if (damager instanceof org.bukkit.entity.Projectile proj && proj.getShooter() instanceof Entity shooter) {
-            damager = shooter;
-        }
-
-        if (event.getEntity() instanceof Player target && damager instanceof LivingEntity boss && bossModel.isBoss(boss)) {
-            // Check if player has Totem grace period
-            Long graceUntil = totemGraceMap.get(target.getUniqueId());
-            if (graceUntil != null) {
-                if (now < graceUntil) {
-                    event.setCancelled(true);
-                    return;
-                } else {
-                    totemGraceMap.remove(target.getUniqueId());
-                }
-            }
-
-            // Boss melee attack rate limiter (prevents 20 hits/sec when passing through player hitbox)
-            Long cdUntil = bossAttackCooldownMap.get(boss.getUniqueId());
-            if (cdUntil != null && now < cdUntil) {
-                event.setCancelled(true);
-                return;
-            }
-            // Set a 900ms attack cooldown on the boss
-            bossAttackCooldownMap.put(boss.getUniqueId(), now + 900L);
-
-            // Cap the max single-hit damage on player to prevent insta 1-tap overkill
-            BossDifficulty diff = bossModel.getBossDifficulty(boss);
-            double maxPlayerDmg = (diff == BossDifficulty.NIGHTMARE) ? 26.0 : (diff == BossDifficulty.HARD ? 18.0 : 12.0);
-            if (event.getDamage() > maxPlayerDmg) {
-                event.setDamage(maxPlayerDmg);
-            }
-        }
-    }
-
-    // =========================================================================
-    // Totem of Undying Protection against Boss Overkill (with Cooldown & Safe Blink)
-    // =========================================================================
-
-    @EventHandler
-    public void onEntityResurrect(EntityResurrectEvent event) {
-        if (event.isCancelled()) return;
-        if (!(event.getEntity() instanceof Player player)) return;
-
-        EntityDamageEvent lastDmg = player.getLastDamageCause();
-        if (lastDmg instanceof EntityDamageByEntityEvent edbe) {
-            Entity damager = edbe.getDamager();
-            if (damager instanceof org.bukkit.entity.Projectile proj && proj.getShooter() instanceof Entity shooter) {
-                damager = shooter;
-            }
-
-            if (damager instanceof LivingEntity boss && bossModel.isBoss(boss)) {
-                long now = System.currentTimeMillis();
-
-                // Check Totem Cooldown (Fatigue)
-                Long cdUntil = totemCooldownMap.get(player.getUniqueId());
-                if (cdUntil != null && now < cdUntil) {
-                    long remainingSec = Math.max(1, (cdUntil - now) / 1000L);
-                    event.setCancelled(true);
-                    player.sendMessage(ChatColor.DARK_RED + "" + ChatColor.BOLD + "\u2620 TOTEM FATIGUE! "
-                            + ChatColor.RED + "Your Totem of Undying is on cooldown for another "
-                            + ChatColor.YELLOW + remainingSec + "s" + ChatColor.RED + "!");
-                    return;
-                }
-
-                // Apply Totem Cooldown (e.g. 60 seconds)
-                totemCooldownMap.put(player.getUniqueId(), now + TOTEM_COOLDOWN_MS);
-                player.setCooldown(Material.TOTEM_OF_UNDYING, (int) (TOTEM_COOLDOWN_MS / 50L));
-
-                // 0.5 seconds grace immunity from boss damage (enough to land safely without multi-hit kill)
-                totemGraceMap.put(player.getUniqueId(), now + 500L);
-                player.setNoDamageTicks(10);
-
-                // Safe Teleport: Instead of knocking back the boss or player (which could cause wall suffocation / falling),
-                // smoothly blink the player ~7 blocks away from the boss to a verified safe ground block
-                Location safeLoc = findSafeTeleportLocation(player.getLocation(), boss.getLocation(), 7.0);
-                if (safeLoc != null) {
-                    // Visual effects before & after teleport
-                    player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 30, 0.5, 1.0, 0.5, 0.1);
-                    player.teleport(safeLoc);
-                    player.getWorld().spawnParticle(Particle.FLASH, safeLoc.clone().add(0, 1, 0), 1);
-                    player.getWorld().playSound(safeLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.2f);
-                }
-
-                player.sendMessage(ChatColor.GOLD + "\u2728 " + ChatColor.YELLOW
-                        + "Your Totem triggered and teleported you to safety! "
-                        + ChatColor.GRAY + "(Totem Cooldown: " + (TOTEM_COOLDOWN_MS / 1000L) + "s)");
-            }
-        }
-    }
-
-    /**
-     * Finds a safe ground location away from the boss to avoid wall suffocation or lava/void hazards.
-     */
-    private Location findSafeTeleportLocation(Location playerLoc, Location bossLoc, double distance) {
-        World world = playerLoc.getWorld();
-        if (world == null) return null;
-
-        // Direction from boss to player
-        Vector dir = playerLoc.toVector().subtract(bossLoc.toVector());
-        dir.setY(0);
-        if (dir.lengthSquared() < 0.01) {
-            dir = new Vector(random.nextDouble() - 0.5, 0, random.nextDouble() - 0.5);
-        }
-        dir.normalize().multiply(distance);
-
-        int targetX = bossLoc.getBlockX() + dir.getBlockX();
-        int targetZ = bossLoc.getBlockZ() + dir.getBlockZ();
-        int startY = playerLoc.getBlockY();
-
-        // Search vertical range +/- 4 blocks for 2 air blocks above solid ground
-        for (int dy = 0; dy <= 4; dy++) {
-            for (int sign : new int[]{1, -1}) {
-                int y = startY + (dy * sign);
-                Block feet = world.getBlockAt(targetX, y, targetZ);
-                Block head = world.getBlockAt(targetX, y + 1, targetZ);
-                Block ground = world.getBlockAt(targetX, y - 1, targetZ);
-
-                if (feet.getType().isAir() && head.getType().isAir()
-                        && ground.getType().isSolid()
-                        && ground.getType() != Material.LAVA
-                        && ground.getType() != Material.FIRE
-                        && ground.getType() != Material.MAGMA_BLOCK) {
-                    Location loc = new Location(world, targetX + 0.5, y, targetZ + 0.5);
-                    loc.setYaw(playerLoc.getYaw());
-                    loc.setPitch(playerLoc.getPitch());
-                    return loc;
-                }
-            }
-        }
-        return null;
-    }
-
-    // =========================================================================
     // Player death by boss — keep inventory, no money loss
     // =========================================================================
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player victim = event.getEntity();
-        totemGraceMap.remove(victim.getUniqueId());
 
         EntityDamageEvent dmg = victim.getLastDamageCause();
         if (!(dmg instanceof EntityDamageByEntityEvent edbe)) return;
