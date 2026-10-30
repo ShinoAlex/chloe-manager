@@ -27,6 +27,26 @@ public class BossView {
         sender.sendMessage(PREFIX + ChatColor.RED + "Only players can use this.");
     }
 
+    public void sendNoPermission(Player player) {
+        player.sendMessage(PREFIX + ChatColor.RED + "You do not have permission to spawn bosses.");
+    }
+
+    public void sendInvalidDifficulty(Player player) {
+        player.sendMessage(PREFIX + ChatColor.RED
+                + "Unknown difficulty. Use: "
+                + ChatColor.YELLOW + "easy, normal, medium, hard, nightmare");
+    }
+
+    public void sendAdminSpawnFailed(Player player) {
+        player.sendMessage(PREFIX + ChatColor.RED + "Failed to spawn the boss here.");
+    }
+
+    public void sendAdminSpawned(Player player, BossDifficulty diff, String mobName) {
+        player.sendMessage(PREFIX + ChatColor.GREEN + "Spawned a "
+                + diff.getColor() + ChatColor.BOLD + diff.getDisplayName()
+                + ChatColor.GREEN + " " + mobName + " boss in front of you.");
+    }
+
     // ── Spawn broadcast (to all online players) ───────────────────────────────
 
     public void broadcastSpawn(BossDifficulty diff, String mobName, String worldName,

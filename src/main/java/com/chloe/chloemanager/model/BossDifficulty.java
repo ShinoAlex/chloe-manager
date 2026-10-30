@@ -7,20 +7,26 @@ import java.util.Random;
 /**
  * MODEL — BossDifficulty
  *
- * The five difficulty tiers a boss can spawn with. Each tier defines the
- * money reward, stat multipliers (health / damage / speed), the relative
- * spawn weight, and how many Essence of Life items the boss can drop.
+ * Stats per difficulty tier. Mob-profile multipliers (BossMobProfile) stack
+ * on top:   finalHp = baseHealth * profile.baseHp
  *
- * Spawn weights sum to 100, so NIGHTMARE (weight 5) ≈ 5% spawn chance.
+ * Health is a virtual pool (Minecraft caps vanilla max health ~1024, so huge
+ * setBaseValue calls were ignored and bosses stayed at ~20 HP).
+ *   EASY 4k · NORMAL 7.5k · MEDIUM 12.5k · HARD 20k · NIGHTMARE 35k
+ *
+ * Damage multipliers apply on top of the mob's natural base attack:
+ *   EASY x100, NORMAL x150, MEDIUM x150, HARD x200, NIGHTMARE x300
+ *
+ * Speed is at least 2.5× the mob's vanilla walk speed.
  */
 public enum BossDifficulty {
 
-    //              displayName,  reward,     baseHealth, damageMult, speedMult, armor, maxHitCapPct, weight, minEss, maxEss, dropChance, color
-    EASY     ("Easy",       10_000.0,    400.0,      1.8,       1.05,      10.0,  0.15,          30,     1,      2,      0.30,       ChatColor.GREEN),
-    NORMAL   ("Normal",     20_000.0,    800.0,      2.5,       1.10,      14.0,  0.10,          25,     1,      3,      0.50,       ChatColor.YELLOW),
-    MEDIUM   ("Medium",     50_000.0,  1_500.0,      3.5,       1.15,      18.0,  0.08,          20,     2,      4,      0.50,       ChatColor.GOLD),
-    HARD     ("Hard",       70_000.0,  3_000.0,      4.5,       1.20,      22.0,  0.05,          20,     3,      5,      0.65,       ChatColor.RED),
-    NIGHTMARE("Nightmare", 150_000.0,  6_000.0,      6.0,       1.25,      25.0,  0.03,           5,     4,      5,      0.95,       ChatColor.DARK_RED);
+    //             name,       reward,     baseHp,     dmgMult, spdMult, armor, maxDmgCapPct, weight, minEss, maxEss, dropChance, color
+    EASY     ("Easy",      10_000.0,   4_000.0,  100.0,   2.5,    12.0,  0.02,          30,     1,      2,      0.30, ChatColor.GREEN),
+    NORMAL   ("Normal",    20_000.0,   7_500.0,  150.0,   2.5,    16.0,  0.02,          25,     1,      3,      0.50, ChatColor.YELLOW),
+    MEDIUM   ("Medium",    50_000.0,  12_500.0,  150.0,   2.5,    20.0,  0.02,          20,     2,      4,      0.50, ChatColor.GOLD),
+    HARD     ("Hard",      70_000.0,  20_000.0,  200.0,   2.5,    24.0,  0.015,         20,     3,      5,      0.65, ChatColor.RED),
+    NIGHTMARE("Nightmare",150_000.0,  35_000.0,  300.0,   2.5,    28.0,  0.01,           5,     4,      5,      0.95, ChatColor.DARK_RED);
 
     private final String    displayName;
     private final double    reward;
@@ -28,11 +34,12 @@ public enum BossDifficulty {
     private final double    damageMultiplier;
     private final double    speedMultiplier;
     private final double    armor;
-    private final double    maxDamageCapPercent; // Max % of max HP boss can take in a single hit
+    /** Max fraction of boss's max HP a single hit can deal (prevents 1-shot). */
+    private final double    maxDamageCapPercent;
     private final int       spawnWeight;
     private final int       minEssence;
     private final int       maxEssence;
-    private final double    essenceDropChance;   // 0.0 – 1.0
+    private final double    essenceDropChance;
     private final ChatColor color;
 
     BossDifficulty(String displayName, double reward,
@@ -66,9 +73,10 @@ public enum BossDifficulty {
     public double    getEssenceDropChance()   { return essenceDropChance; }
     public ChatColor getColor()               { return color; }
 
-    /**
-     * Weighted random selection. NIGHTMARE ≈ 5% when weights sum to 100.
-     */
+    /** Minions only spawn for HARD and NIGHTMARE. */
+    public boolean spawnMinions() { return this == HARD || this == NIGHTMARE; }
+
+    /** Weighted random selection. NIGHTMARE ≈ 5% when weights sum to 100. */
     public static BossDifficulty roll(Random random) {
         int total = 0;
         for (BossDifficulty d : values()) total += d.spawnWeight;

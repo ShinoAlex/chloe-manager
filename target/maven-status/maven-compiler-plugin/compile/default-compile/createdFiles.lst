@@ -6,6 +6,8 @@ com\chloe\chloemanager\controller\KillRewardController.class
 com\chloe\chloemanager\model\TaixiuModel.class
 com\chloe\chloemanager\controller\BossController.class
 com\chloe\chloemanager\model\BankModel$BankAccount.class
+com\chloe\chloemanager\model\BossMobProfile.class
+com\chloe\chloemanager\controller\BossController$4.class
 com\chloe\chloemanager\model\TaixiuModel$DiceResult.class
 com\chloe\chloemanager\controller\HomeController$1.class
 com\chloe\chloemanager\model\BossDifficulty.class
@@ -19,6 +21,7 @@ com\chloe\chloemanager\model\ShopRegistry$ShopCategory.class
 com\chloe\chloemanager\model\ClanModel$ClanData.class
 com\chloe\chloemanager\model\TaixiuLog.class
 com\chloe\chloemanager\view\SellGUI.class
+com\chloe\chloemanager\controller\BossController$5.class
 com\chloe\chloemanager\view\TaixiuView.class
 com\chloe\chloemanager\controller\BossController$2.class
 com\chloe\chloemanager\model\AhListing.class
@@ -38,9 +41,11 @@ com\chloe\chloemanager\model\BossModel$BossInstance.class
 com\chloe\chloemanager\view\BossView.class
 com\chloe\chloemanager\model\TaixiuModel$BetSide.class
 com\chloe\chloemanager\controller\BankController.class
+com\chloe\chloemanager\controller\BossController$6.class
 com\chloe\chloemanager\model\AhListing$Status.class
 com\chloe\chloemanager\model\BankModel.class
 com\chloe\chloemanager\model\ClanModel.class
+com\chloe\chloemanager\view\ShopGUI$ShopHolder.class
 com\chloe\chloemanager\view\BossGUI.class
 com\chloe\chloemanager\controller\HomeController.class
 com\chloe\chloemanager\controller\AhController.class

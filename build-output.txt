@@ -14,27 +14,23 @@ Building...
 [INFO] 
 [INFO] --- compiler:3.13.0:compile (default-compile) @ chloe-manager ---
 [INFO] Recompiling the module because of changed source code.
-[INFO] Compiling 34 source files with javac [debug target 17] to target\classes
+[INFO] Compiling 35 source files with javac [debug target 17] to target\classes
 [INFO] /c:/Users/lolre/OneDrive/Desktop/Project/java-project/chloe-manager/src/main/java/com/chloe/chloemanager/controller/ClanController.java: c:\Users\lolre\OneDrive\Desktop\Project\java-project\chloe-manager\src\main\java\com\chloe\chloemanager\controller\ClanController.java uses or overrides a deprecated API.
 [INFO] /c:/Users/lolre/OneDrive/Desktop/Project/java-project/chloe-manager/src/main/java/com/chloe/chloemanager/controller/ClanController.java: Recompile with -Xlint:deprecation for details.
 [INFO] -------------------------------------------------------------
 [ERROR] COMPILATION ERROR : 
 [INFO] -------------------------------------------------------------
-[ERROR] /c:/Users/lolre/OneDrive/Desktop/Project/java-project/chloe-manager/src/main/java/com/chloe/chloemanager/controller/BossController.java:[333,62] cannot find symbol
-  symbol:   variable REGEN
-  location: class org.bukkit.potion.PotionEffectType
+[ERROR] /c:/Users/lolre/OneDrive/Desktop/Project/java-project/chloe-manager/src/main/java/com/chloe/chloemanager/controller/BossController.java:[683,18] an enum switch case label must be the unqualified name of an enumeration constant
 [INFO] 1 error
 [INFO] -------------------------------------------------------------
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  2.093 s
-[INFO] Finished at: 2026-10-28T23:19:30+07:00
+[INFO] Total time:  2.227 s
+[INFO] Finished at: 2026-10-29T22:27:17+07:00
 [INFO] ------------------------------------------------------------------------
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project chloe-manager: Compilation failure
-[ERROR] /c:/Users/lolre/OneDrive/Desktop/Project/java-project/chloe-manager/src/main/java/com/chloe/chloemanager/controller/BossController.java:[333,62] cannot find symbol
-[ERROR]   symbol:   variable REGEN
-[ERROR]   location: class org.bukkit.potion.PotionEffectType
+[ERROR] /c:/Users/lolre/OneDrive/Desktop/Project/java-project/chloe-manager/src/main/java/com/chloe/chloemanager/controller/BossController.java:[683,18] an enum switch case label must be the unqualified name of an enumeration constant
 [ERROR] -> [Help 1]
 [ERROR] 
 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.

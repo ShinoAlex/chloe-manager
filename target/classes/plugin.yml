@@ -78,8 +78,8 @@ commands:
     permission: chloemanager.home
 
   boss:
-    description: Open the boss trade GUI (Essence of Life -> legendary pickaxe)
-    usage: /boss
+    description: Open the boss trade GUI, or spawn a test boss (admin)
+    usage: /boss [spawn [difficulty]]
     permission: chloemanager.boss
 
   clan:
@@ -131,6 +131,10 @@ permissions:
   chloemanager.boss:
     description: Allows use of /boss trade GUI
     default: true
+
+  chloemanager.boss.spawn:
+    description: Allows /boss spawn [difficulty] for admin testing
+    default: op
 
   chloemanager.clan:
     description: Allows use of /clan commands

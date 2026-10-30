@@ -14,7 +14,9 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,10 +33,11 @@ import java.util.UUID;
 public class BossModel {
 
     // ── PDC keys ────────────────────────────────────────────────────────────
-    private final NamespacedKey bossKey;       // BYTE  1 = "this entity is a boss"
-    private final NamespacedKey diffKey;       // STRING difficulty name
-    private final NamespacedKey essenceKey;   // BYTE  1 = "this is Essence of Life"
-    private final NamespacedKey pickaxeKey;    // BYTE  1 = "this is the Boss Slayer Pickaxe"
+    private final NamespacedKey bossKey;
+    private final NamespacedKey diffKey;
+    private final NamespacedKey essenceKey;
+    private final NamespacedKey pickaxeKey;
+    private final NamespacedKey minionKey;    // BYTE 1 = "this entity is a minion"
 
     // ── Active bosses ───────────────────────────────────────────────────────
     private final Map<UUID, BossInstance> activeBosses = new HashMap<>();
@@ -44,6 +47,7 @@ public class BossModel {
         this.diffKey    = new NamespacedKey(plugin, "boss_difficulty");
         this.essenceKey = new NamespacedKey(plugin, "essence_of_life");
         this.pickaxeKey = new NamespacedKey(plugin, "boss_pickaxe");
+        this.minionKey  = new NamespacedKey(plugin, "is_minion");
     }
 
     // ── Key accessors ────────────────────────────────────────────────────────
@@ -52,6 +56,7 @@ public class BossModel {
     public NamespacedKey getDiffKey()     { return diffKey; }
     public NamespacedKey getEssenceKey()  { return essenceKey; }
     public NamespacedKey getPickaxeKey()  { return pickaxeKey; }
+    public NamespacedKey getMinionKey()   { return minionKey; }
 
     // ── Active-boss tracking ────────────────────────────────────────────────
 
@@ -82,6 +87,17 @@ public class BossModel {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    // ── Minion tagging & detection ───────────────────────────────────────────
+
+    public void tagMinion(LivingEntity entity) {
+        entity.getPersistentDataContainer().set(minionKey, PersistentDataType.BYTE, (byte) 1);
+    }
+
+    public boolean isMinion(Entity entity) {
+        if (entity == null) return false;
+        return entity.getPersistentDataContainer().has(minionKey, PersistentDataType.BYTE);
     }
 
     // ── Essence of Life item ──────────────────────────────────────────────────
@@ -159,51 +175,74 @@ public class BossModel {
     public static class BossInstance {
         private final UUID entityId;
         private final BossDifficulty difficulty;
+        private final BossMobProfile mobProfile;
         private final long spawnTime;
         private volatile long lastSkillTime;
         private volatile long lastSkillTime2;
         private volatile long lastSkillTime3;
         private volatile long lastSonicBoomTime;
-        private volatile long lastPlayerNearbyTime;  // ms — resets whenever a player is in range
+        private volatile long lastMobSkillTime;
+        private volatile long lastRangedShotTime;
+        private volatile long lastDodgeTime;
+        private volatile long lastPlayerNearbyTime;
         private volatile double lastX;
         private volatile double lastY;
         private volatile double lastZ;
         private volatile long lastMovedTime;
+        /** True HP pool — vanilla max-health is capped (~1024) so this is the real tank. */
+        private volatile double virtualMaxHp;
+        private volatile double virtualHp;
+        /** All minion UUIDs spawned by this boss — killed when boss dies. */
+        private final Set<UUID> minionIds = new HashSet<>();
 
-        public BossInstance(UUID entityId, BossDifficulty difficulty) {
-            this.entityId   = entityId;
-            this.difficulty  = difficulty;
-            this.spawnTime   = System.currentTimeMillis();
-            this.lastSkillTime = 0;
-            this.lastSkillTime2 = 0;
-            this.lastSkillTime3 = 0;
-            this.lastSonicBoomTime = 0;
-            this.lastPlayerNearbyTime = System.currentTimeMillis(); // grace period from spawn
-            this.lastMovedTime = System.currentTimeMillis();
+        public BossInstance(UUID entityId, BossDifficulty difficulty,
+                            BossMobProfile mobProfile) {
+            this.entityId             = entityId;
+            this.difficulty           = difficulty;
+            this.mobProfile           = mobProfile;
+            this.spawnTime            = System.currentTimeMillis();
+            this.lastSkillTime        = 0;
+            this.lastSkillTime2       = 0;
+            this.lastSkillTime3       = 0;
+            this.lastSonicBoomTime    = 0;
+            this.lastMobSkillTime     = 0;
+            this.lastPlayerNearbyTime = System.currentTimeMillis();
+            this.lastMovedTime        = System.currentTimeMillis();
         }
 
-        public UUID getEntityId()            { return entityId; }
-        public BossDifficulty getDifficulty() { return difficulty; }
-        public long getSpawnTime()           { return spawnTime; }
-        public long getLastSkillTime()       { return lastSkillTime; }
-        public void setLastSkillTime(long t) { lastSkillTime = t; }
-        public long getLastSkillTime2()       { return lastSkillTime2; }
-        public void setLastSkillTime2(long t) { lastSkillTime2 = t; }
-        public long getLastSkillTime3()       { return lastSkillTime3; }
-        public void setLastSkillTime3(long t) { lastSkillTime3 = t; }
-        public long getLastSonicBoomTime()       { return lastSonicBoomTime; }
-        public void setLastSonicBoomTime(long t)  { lastSonicBoomTime = t; }
-        public long getLastPlayerNearbyTime()          { return lastPlayerNearbyTime; }
-        public void setLastPlayerNearbyTime(long t)    { lastPlayerNearbyTime = t; }
+        public UUID           getEntityId()               { return entityId; }
+        public BossDifficulty getDifficulty()              { return difficulty; }
+        public BossMobProfile getMobProfile()              { return mobProfile; }
+        public long           getSpawnTime()               { return spawnTime; }
+        public long           getLastSkillTime()           { return lastSkillTime; }
+        public void           setLastSkillTime(long t)     { lastSkillTime = t; }
+        public long           getLastSkillTime2()          { return lastSkillTime2; }
+        public void           setLastSkillTime2(long t)    { lastSkillTime2 = t; }
+        public long           getLastSkillTime3()          { return lastSkillTime3; }
+        public void           setLastSkillTime3(long t)    { lastSkillTime3 = t; }
+        public long           getLastSonicBoomTime()       { return lastSonicBoomTime; }
+        public void           setLastSonicBoomTime(long t) { lastSonicBoomTime = t; }
+        public long           getLastMobSkillTime()        { return lastMobSkillTime; }
+        public void           setLastMobSkillTime(long t)  { lastMobSkillTime = t; }
+        public long           getLastRangedShotTime()      { return lastRangedShotTime; }
+        public void           setLastRangedShotTime(long t){ lastRangedShotTime = t; }
+        public long           getLastDodgeTime()           { return lastDodgeTime; }
+        public void           setLastDodgeTime(long t)     { lastDodgeTime = t; }
+        public long           getLastPlayerNearbyTime()    { return lastPlayerNearbyTime; }
+        public void           setLastPlayerNearbyTime(long t) { lastPlayerNearbyTime = t; }
         public double getLastX()                       { return lastX; }
         public double getLastY()                       { return lastY; }
         public double getLastZ()                       { return lastZ; }
         public void setLastPos(double x, double y, double z) {
-            this.lastX = x;
-            this.lastY = y;
-            this.lastZ = z;
+            this.lastX = x; this.lastY = y; this.lastZ = z;
         }
-        public long getLastMovedTime()                 { return lastMovedTime; }
-        public void setLastMovedTime(long t)           { this.lastMovedTime = t; }
+        public long    getLastMovedTime()              { return lastMovedTime; }
+        public void    setLastMovedTime(long t)        { this.lastMovedTime = t; }
+        public double  getVirtualMaxHp()               { return virtualMaxHp; }
+        public double  getVirtualHp()                  { return virtualHp; }
+        public void    setVirtualMaxHp(double hp)      { this.virtualMaxHp = hp; }
+        public void    setVirtualHp(double hp)         { this.virtualHp = hp; }
+        public Set<UUID> getMinionIds()                { return minionIds; }
+        public void    addMinion(UUID id)              { minionIds.add(id); }
     }
 }

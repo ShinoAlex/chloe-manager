@@ -204,6 +204,7 @@ public final class ChloeManagerPlugin extends JavaPlugin {
         bossController = new BossController(this, bossModel, economyModel, bossView, bossGUI);
 
         getCommand("boss").setExecutor(bossController);
+        getCommand("boss").setTabCompleter(bossController);
         getServer().getPluginManager().registerEvents(bossController, this);
         bossController.startTasks();
 

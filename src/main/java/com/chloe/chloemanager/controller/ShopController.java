@@ -7,7 +7,9 @@ import com.chloe.chloemanager.model.ShopRegistry.ShopCategory;
 import com.chloe.chloemanager.model.ShopRegistry.ShopEntry;
 import com.chloe.chloemanager.view.EconomyView;
 import com.chloe.chloemanager.view.ShopGUI;
+import com.chloe.chloemanager.view.ShopGUI.ShopHolder;
 import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -16,6 +18,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -88,26 +91,47 @@ public class ShopController implements CommandExecutor, Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
-        String title = event.getView().getTitle();
-        if (title == null) return;
-
-        boolean isMainMenu     = title.equals(ShopGUI.TITLE_MAIN);
-        boolean isCategoryPage = title.startsWith(ShopGUI.TITLE_MARKER) && !isMainMenu;
-
-        if (!isMainMenu && !isCategoryPage) return;
+        Inventory top = event.getView().getTopInventory();
+        ShopHolder holder = resolveShopHolder(top, event.getView().getTitle());
+        if (holder == null) return;
 
         // Always cancel — shop is read-only, nothing should move
         event.setCancelled(true);
 
         int slot = event.getRawSlot();
-        // Only process clicks on the top (GUI) inventory
-        if (slot < 0 || slot >= event.getInventory().getSize()) return;
+        if (slot < 0 || slot >= top.getSize()) return;
 
-        if (isMainMenu) {
-            handleMainMenuClick(player, slot);
+        if (holder.isMainMenu()) {
+            handleMainMenuClick(player, event.getCurrentItem());
         } else {
-            handleCategoryPageClick(player, event.getInventory(), slot, event.getClick());
+            ShopCategory category = holder.getCategory();
+            if (category != null) {
+                playerCategory.put(player.getUniqueId(), category);
+            }
+            handleCategoryPageClick(player, top, slot, event.getClick());
         }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (resolveShopHolder(event.getView().getTopInventory(),
+                event.getView().getTitle()) != null) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Prefer the inventory holder; fall back to title text if Paper rewrites it. */
+    private ShopHolder resolveShopHolder(Inventory top, String title) {
+        if (top != null && top.getHolder() instanceof ShopHolder holder) return holder;
+        if (title == null) return null;
+        String plain = ChatColor.stripColor(title);
+        if (plain == null) return null;
+        if (plain.contains("Chloe Shop")) return ShopHolder.main();
+        for (ShopCategory cat : registry.getCategories()) {
+            String name = ChatColor.stripColor(cat.getDisplayName());
+            if (name != null && plain.contains(name)) return ShopHolder.category(cat);
+        }
+        return null;
     }
 
     // =========================================================================
@@ -120,17 +144,21 @@ public class ShopController implements CommandExecutor, Listener {
         player.openInventory(gui.buildMainMenu());
     }
 
-    private void handleMainMenuClick(Player player, int slot) {
-        List<ShopCategory> cats = registry.getCategories();
-        // Determine which category button maps to this slot
-        int[] slots = categorySlots(cats.size());
-        for (int i = 0; i < slots.length; i++) {
-            if (slots[i] == slot) {
-                openCategoryPage(player, cats.get(i), 0);
+    private void handleMainMenuClick(Player player, ItemStack clicked) {
+        if (clicked == null) return;
+        Material type = clicked.getType();
+        if (type == Material.AIR
+                || type == Material.LIME_STAINED_GLASS_PANE
+                || type == Material.BLACK_STAINED_GLASS_PANE
+                || type == Material.NETHER_STAR) {
+            return;
+        }
+        for (ShopCategory cat : registry.getCategories()) {
+            if (cat.getIcon() == type) {
+                openCategoryPage(player, cat, 0);
                 return;
             }
         }
-        // Click on filler — ignore
     }
 
     // =========================================================================
@@ -150,7 +178,7 @@ public class ShopController implements CommandExecutor, Listener {
         ShopCategory category = playerCategory.get(uuid);
         int page      = playerPage.getOrDefault(uuid, 0);
 
-        if (category == null) { openMainMenu(player); return; }
+        if (category == null) return;
 
         // ── Navigation buttons ───────────────────────────────────────────────
         if (slot == ShopGUI.SLOT_BACK) {
@@ -308,22 +336,4 @@ public class ShopController implements CommandExecutor, Listener {
         gui.refreshBalance(inv, newBalance);
     }
 
-    // =========================================================================
-    // Helpers
-    // =========================================================================
-
-    /** Must match the logic in ShopGUI.categorySlots() exactly. */
-    private int[] categorySlots(int count) {
-        return switch (count) {
-            case 1  -> new int[]{22};
-            case 2  -> new int[]{20, 24};
-            case 3  -> new int[]{20, 22, 24};
-            case 4  -> new int[]{19, 21, 23, 25};
-            default -> {
-                int[] s = new int[count];
-                for (int i = 0; i < count; i++) s[i] = 10 + i * 2;
-                yield s;
-            }
-        };
-    }
 }

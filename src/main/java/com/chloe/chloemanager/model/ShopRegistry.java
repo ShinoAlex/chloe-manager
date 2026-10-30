@@ -165,7 +165,14 @@ public class ShopRegistry {
         add(c, Material.NETHER_BRICKS,      16.0);     // ~sell 4.0 ×4
         add(c, Material.QUARTZ_BLOCK,       24.0);     // quartz sell 2.0 ×4/block = 8 ×3
         add(c, Material.SEA_LANTERN,        20.0);     // ~sell 5.0 ×4
-        add(c, Material.MAGMA_BLOCK,        16.0);     // ~sell 4.0 ×4
+        add(c, Material.MAGMA_BLOCK,        15.0);     // decorative, $1 off
+        add(c, Material.SLIME_BLOCK,        40.0);     // slime ball sell 10 ×4
+        add(c, Material.HONEY_BLOCK,        40.0);     // honeycomb sell 10 ×4
+        add(c, Material.BROWN_MUSHROOM,      2.0);
+        add(c, Material.RED_MUSHROOM,        2.0);
+        add(c, Material.BROWN_MUSHROOM_BLOCK, 8.0);
+        add(c, Material.RED_MUSHROOM_BLOCK,   8.0);
+        add(c, Material.MUSHROOM_STEM,        8.0);
     }
 
     private void registerWood() {
@@ -199,7 +206,7 @@ public class ShopRegistry {
         add(c, Material.MANGROVE_LOG,    2.0);     // sell 1.0 ×2
         add(c, Material.MANGROVE_PLANKS, 0.5);
         add(c, Material.BAMBOO,          0.4);      // sell 0.2 ×2
-        add(c, Material.BAMBOO_BLOCK,    2.0);     // sell 1.0 ×2
+        add(c, Material.BAMBOO_BLOCK,    2.0);     // block tre $2
 
         // ── Decorative wood (3×–4× sell price) ──────────────────────────────
         add(c, Material.CHERRY_LOG,      6.0);     // sell 1.5 ×4
@@ -255,7 +262,10 @@ public class ShopRegistry {
         //add(c, Material.ELYTRA,             2000.0);
         //add(c, Material.NETHER_STAR,        2500.0);
         //add(c, Material.BEACON,             5000.0);
-        //add(c, Material.SHULKER_SHELL,       200.0);
+        add(c, Material.SHULKER_SHELL,        600.0);   // sell 80 ×2
+        add(c, Material.TURTLE_EGG,           1000.0);   // sell 50 ×2
+        add(c, Material.WITHER_ROSE,           5000.0);
+        add(c, Material.SNOWBALL,               3.0);
        //add(c, Material.DRAGON_EGG,        10000.0);
         add(c, Material.ENCHANTED_GOLDEN_APPLE, 50000.0);
         add(c, Material.EXPERIENCE_BOTTLE,    1500.0);
