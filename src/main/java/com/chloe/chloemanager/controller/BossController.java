@@ -165,9 +165,17 @@ public class BossController implements CommandExecutor, Listener {
     // =========================================================================
 
     public void startTasks() {
+        // On plugin enable: purge any leftover boss entities from a previous
+        // session (they keep their PDC tags across restarts).
+        despawnAllBosses();
+
         spawnTask = new BukkitRunnable() {
             @Override public void run() {
-                if (!bossModel.hasActiveBoss()) spawnBoss();
+                // Only spawn when no boss is alive — never kill a boss that is
+                // currently being fought. Orphan cleanup only happens here.
+                if (bossModel.hasActiveBoss()) return;
+                despawnOrphanBosses();
+                spawnBoss();
             }
         }.runTaskTimer(plugin, SPAWN_INITIAL_DELAY, SPAWN_INTERVAL_TICKS);
 
@@ -176,9 +184,40 @@ public class BossController implements CommandExecutor, Listener {
         }.runTaskTimer(plugin, SKILL_INTERVAL_TICKS, SKILL_INTERVAL_TICKS);
     }
 
+    /**
+     * Remove ALL boss entities from every world and clear the tracking map.
+     * Used on plugin enable/disable for a hard reset.
+     */
+    public void despawnAllBosses() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                if (bossModel.isBoss(entity)) {
+                    entity.remove();
+                }
+            }
+        }
+        bossModel.getActiveBosses().clear();
+    }
+
+    /**
+     * Remove boss entities that exist in the world but are NOT tracked by the
+     * plugin (leftovers from a previous session or a failed spawn).  Tracked,
+     * currently-alive bosses are left untouched.
+     */
+    public void despawnOrphanBosses() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                if (!bossModel.isBoss(entity)) continue;
+                if (bossModel.getActiveBosses().containsKey(entity.getUniqueId())) continue;
+                entity.remove();
+            }
+        }
+    }
+
     public void stopTasks() {
         if (spawnTask != null) spawnTask.cancel();
         if (skillTask != null) skillTask.cancel();
+        despawnAllBosses();  // Clean up all bosses when stopping
     }
 
     // =========================================================================
@@ -355,8 +394,10 @@ public class BossController implements CommandExecutor, Listener {
                 + ChatColor.RESET + ChatColor.GRAY + mobName);
         boss.setCustomNameVisible(true);
         boss.setGlowing(true);
+        // Bosses are transient: they must NOT be saved to the world save file,
+        // otherwise they survive a server restart and pile up over time.
         boss.setRemoveWhenFarAway(false);
-        boss.setPersistent(true);
+        boss.setPersistent(false);
     }
 
     // =========================================================================
